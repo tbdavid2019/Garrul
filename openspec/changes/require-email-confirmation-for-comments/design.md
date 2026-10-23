@@ -25,7 +25,7 @@ The current comment POST validates and inserts a comment in one request, then re
 
 ### Use two runtime flags with compatibility-preserving defaults
 
-Add `comment_email_confirmation_enabled` (default `false`) and `oauth_login_enabled` (default `true`) to the existing runtime flag system. Expose both through the public config/bootstrap payload where the widget needs them, add operator controls in Admin → Settings, and register environment defaults so an operator can recover a setting without deleting provider secrets. Database overrides continue to take precedence over environment defaults.
+Add `comment_email_confirmation_enabled` (default `false`) and `oauth_login_enabled` (default `false`) to the existing runtime flag system. OAuth is disabled until an operator explicitly enables it through Admin → Settings or `OAUTH_LOGIN_ENABLED=true`. Expose both through the public config/bootstrap payload where the widget needs them, add operator controls in Admin → Settings, and register environment defaults so an operator can recover a setting without deleting provider secrets. Database overrides continue to take precedence over environment defaults.
 
 When OAuth is paused, `api.config` and bootstrap return an empty provider list. Enforce the same flag at OAuth start, callback, and handoff exchange so a flow started before the pause cannot mint a session afterward. Do not change `/auth/me`, sign-out, or ordinary reads/actions for sessions that already exist. If an administrator loses the active session while OAuth remains paused, the operator can clear the `oauth_login_enabled` database override or set it true through the environment and redeploy; document this recovery path.
 
@@ -68,10 +68,10 @@ Add widget strings for the email field, accepted state, and relevant failure sta
 
 ## Migration Plan
 
-1. Add the pending-submission table and indexes with a new forward-only migration. The default runtime values keep existing posting and OAuth behavior unchanged.
+1. Add the pending-submission table and indexes with a new forward-only migration. Email confirmation remains off by default; OAuth sign-in is off by default, while existing sessions remain valid.
 2. Deploy the Worker and widget changes, then verify outbound email configuration before enabling confirmation mode.
-3. Enable `comment_email_confirmation_enabled` and pause OAuth through Admin → Settings. Existing comments and sessions remain intact.
-4. To roll back behavior without reverting code, disable email-confirmation mode and re-enable OAuth. Expired candidates are removed by the scheduled cleanup; already-confirmed comments stay normal comments.
+3. Enable `comment_email_confirmation_enabled` through Admin → Settings. OAuth sign-in is already off unless an environment or database override explicitly enables it. Existing comments and sessions remain intact.
+4. To roll back behavior without reverting code, disable email-confirmation mode and explicitly re-enable OAuth if required. Expired candidates are removed by the scheduled cleanup; already-confirmed comments stay normal comments.
 5. If code must be rolled back while OAuth must remain paused, remove the configured OAuth provider credentials for that rollback window because the older Worker does not understand the new flag.
 
 ## Open Questions

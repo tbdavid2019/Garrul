@@ -57,7 +57,7 @@ const FLAG_META: { key: FlagKey; label: string; help: string }[] = [
 	{
 		key: "oauth_login_enabled",
 		label: "OAuth sign-in",
-		help: "Allow new GitHub, Google, Facebook, X, and Discord sign-ins. Turning this off keeps existing sessions valid but prevents new sign-ins; retain an active admin session or use the documented recovery path.",
+		help: "Off by default. Enable configured GitHub, Google, Facebook, X, and Discord sign-ins here. Existing sessions remain valid while OAuth is off; retain an active admin session or use the documented recovery path.",
 	},
 	{
 		key: "reactions_enabled",

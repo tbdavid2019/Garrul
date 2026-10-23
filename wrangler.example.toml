@@ -88,10 +88,9 @@ OAUTH_CALLBACK_BASE = "https://comments.example.com"
 # Require an explicit email confirmation before publishing comments
 # (default off). Needs the email block above; also editable from Admin → Settings:
 # COMMENT_EMAIL_CONFIRMATION_ENABLED = "false"
-# Allow new OAuth sign-ins through configured providers (default on). Turning
-# this off keeps existing sessions valid and leaves provider credentials intact;
-# retain an admin session or use the documented recovery path:
-# OAUTH_LOGIN_ENABLED = "true"
+# Allow new OAuth sign-ins through configured providers (default off). Turning
+# this on enables configured providers; existing sessions remain valid either way:
+# OAUTH_LOGIN_ENABLED = "false"
 # Per-comment emoji reactions:
 # REACTIONS_ENABLED = "true"
 # Page-level engagement — react / vote on the article itself (default off):

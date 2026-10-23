@@ -696,10 +696,10 @@ export const CONFIG_REGISTRY: ConfigEntry[] = [
 		required: false,
 		group: "Feature flags",
 		adminEditable: true,
-		hint: "allow new OAuth sign-ins; defaults on",
+		hint: "allow new OAuth sign-ins; defaults off",
 		description:
-			"Allow new OAuth sign-ins through configured providers. Defaults **on**; set `false` to pause all providers without deleting credentials. Existing sessions remain valid. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path.",
-		example: "true",
+			"Allow new OAuth sign-ins through configured providers. Defaults **off**; set `true` to enable configured providers. Existing sessions remain valid while sign-in is paused. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path.",
+		example: "false",
 		addedIn: "2.29.0",
 	},
 	{

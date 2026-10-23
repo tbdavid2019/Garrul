@@ -32,6 +32,7 @@ const setup = (extra: Record<string, unknown> = {}) => {
 		GOOGLE_CLIENT_SECRET: "csecret",
 		ALLOWED_ORIGINS: BLOG,
 		ADMIN_EMAILS: "boss@example.com",
+		OAUTH_LOGIN_ENABLED: "true",
 		...extra,
 	} as unknown as Bindings;
 	const app = new Hono<{ Bindings: Bindings }>().route("/", auth);

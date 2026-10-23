@@ -2,7 +2,7 @@
 
 ## 1. Configuration and pending-submission storage
 
-- [x] 1.1 Add `comment_email_confirmation_enabled` and `oauth_login_enabled` to bindings, the config registry, runtime flag resolution, bootstrap/config payloads, and Admin → Settings; verify the settings and config tests cover defaults, overrides, and reset behavior, and run `npm run config:check`.
+- [x] 1.1 Add `comment_email_confirmation_enabled` and `oauth_login_enabled` to bindings, the config registry, runtime flag resolution, bootstrap/config payloads, and Admin → Settings; verify OAuth sign-in defaults off, settings/config tests cover overrides and reset behavior, and run `npm run config:check`.
 - [x] 1.2 Add a forward-only D1 migration and query helpers for pending comment submissions, hashed confirmation tokens, expiry, and idempotent promotion; verify migration and query tests cover token lookup, expiry, duplicate confirmation, and cleanup.
 - [x] 1.3 Add per-address pending limits, shared global confirmation-send reservations/refunds, and scheduled removal of expired submissions; verify email-budget and scheduled-job tests cover exhausted budgets, provider failure, and deletion of expired data, and document limits and retention in `AGENTS-OPERATE.md`.
 

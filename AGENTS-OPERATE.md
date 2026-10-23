@@ -230,7 +230,7 @@ between the two is a build error, not a silent misclassification.
 | `GITHUB_TOKEN` | secret | Optional. Raises the GitHub API rate limit for the `/admin/*` "update available" check. Unauthenticated calls allow 60 req/hr per IP and Cloudflare egress IPs are shared across colos. The check only reads public release metadata, so the token needs **no** scopes or permissions: a fine-grained PAT with no repository access, or a classic PAT with every scope unchecked. Do not grant `public_repo` — despite the name it is read **and write** on all your public repos. | `github_pat_...` | `wrangler secret put` / `.dev.vars` |
 | `COMMENTS_ENABLED` | var | Master switch for new comment creation. Defaults **on**; set `0`/`false`/`no`/`off` to close commenting instance-wide (existing comments stay visible read-only, the widget shows a "Comments are closed." notice, and `POST /api/v1/comments` returns 403). | `true` | `wrangler.toml` |
 | `COMMENT_EMAIL_CONFIRMATION_ENABLED` | var | Require every commenter to confirm an email link before a comment can be published. Defaults **off** to preserve the existing posting flow. Needs `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` and `PUBLIC_BASE_URL`; also settable from Admin → Settings. | `true` | `wrangler.toml` default; **Admin → Settings** overrides |
-| `OAUTH_LOGIN_ENABLED` | var | Allow new OAuth sign-ins through configured providers. Defaults **on**; set `false` to pause all providers without deleting credentials. Existing sessions remain valid. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path. | `true` | `wrangler.toml` default; **Admin → Settings** overrides |
+| `OAUTH_LOGIN_ENABLED` | var | Allow new OAuth sign-ins through configured providers. Defaults **off**; set `true` to enable configured providers. Existing sessions remain valid while sign-in is paused. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path. | `false` | `wrangler.toml` default; **Admin → Settings** overrides |
 | `REACTIONS_ENABLED` | var | Comment emoji reactions. Defaults **on**; same falsy-spelling semantics. Disabling hides the reaction bar and 403s `POST /api/v1/reactions`. | `true` | `wrangler.toml` |
 | `VOTING_ENABLED` | var | Comment voting (up/down buttons in the widget). Defaults **on** when unset; set `0`/`false`/`no`/`off` to disable instance-wide. | `true` | `wrangler.toml` |
 | `DOWNVOTES_ENABLED` | var | Downvote button. Same defaults-on semantics. Applies to **both** comment votes and page votes (a brigading-mitigation switch); independent of `VOTING_ENABLED`. | `true` | `wrangler.toml` |
@@ -609,12 +609,17 @@ Five providers ship: GitHub, Google, Facebook, X, and Discord (the
 last three added in v1.13.0). Generic OIDC is v2 backlog. The operator
 picks which to enable by setting the matching client ID + secret — a
 provider with no credentials is simply omitted from the sign-in options.
-If all are unset, the widget shows only the anonymous form.
+OAuth sign-in is **off by default**, even when credentials are present. Set
+`OAUTH_LOGIN_ENABLED = "true"` or enable OAuth sign-in in Admin → Settings to
+show configured providers. If all provider credentials are unset, the widget
+shows only the anonymous form.
 
 To pause every provider without deleting credentials, turn **OAuth sign-in**
-off in Admin → Settings or set `OAUTH_LOGIN_ENABLED = "false"`. This blocks
-new starts, callbacks already in progress, and session-handoff exchanges.
-Existing sessions remain valid. Before pausing, keep an admin session open.
+off in Admin → Settings or set `OAUTH_LOGIN_ENABLED = "false"`. A database
+setting overrides the environment value, so switch it off in Admin → Settings
+if it was explicitly enabled there. This blocks new starts, callbacks already
+in progress, and session-handoff exchanges. Existing sessions remain valid.
+Before pausing, keep an admin session open.
 
 If the runtime setting prevents administrators from signing in again, deploy
 with `OAUTH_LOGIN_ENABLED = "true"`, then remove the runtime override from the
@@ -625,8 +630,8 @@ npx wrangler d1 execute DB --remote --command \
   "DELETE FROM settings WHERE key = 'oauth_login_enabled';"
 ```
 
-If the environment default is `false`, change it to `true` before running that
-command. The environment value alone cannot override an existing settings row.
+Set the environment default to `true` before running that command. The
+environment value alone cannot override an existing settings row.
 
 Callback URL pattern (driven by `OAUTH_CALLBACK_BASE`):
 

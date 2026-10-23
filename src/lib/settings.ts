@@ -124,8 +124,8 @@ const FLAGS: Record<FlagKey, { env: keyof Bindings; default: boolean }> = {
 		env: "COMMENT_EMAIL_CONFIRMATION_ENABLED",
 		default: false,
 	},
-	// OAuth remains enabled unless an operator pauses new provider sign-ins.
-	oauth_login_enabled: { env: "OAUTH_LOGIN_ENABLED", default: true },
+	// Keep provider login disabled until an operator explicitly enables it.
+	oauth_login_enabled: { env: "OAUTH_LOGIN_ENABLED", default: false },
 };
 
 export const FLAG_KEYS = Object.keys(FLAGS) as FlagKey[];

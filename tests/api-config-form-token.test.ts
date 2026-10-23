@@ -70,8 +70,18 @@ describe("GET /api/v1/config authentication modes", () => {
 	it("exposes safe defaults and no configured providers", async () => {
 		const cfg = await getConfig();
 		expect(cfg.comment_email_confirmation_enabled).toBe(false);
-		expect(cfg.oauth_login_enabled).toBe(true);
+		expect(cfg.oauth_login_enabled).toBe(false);
 		expect(cfg.providers).toEqual([]);
+	});
+
+	it("exposes configured providers only when OAuth is explicitly enabled", async () => {
+		const cfg = await getConfig({
+			GH_CLIENT_ID: "client",
+			GH_CLIENT_SECRET: "secret",
+			OAUTH_LOGIN_ENABLED: "true",
+		});
+		expect(cfg.oauth_login_enabled).toBe(true);
+		expect(cfg.providers).toEqual(["github"]);
 	});
 
 	it("hides configured providers while OAuth sign-in is paused", async () => {

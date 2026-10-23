@@ -53,6 +53,7 @@ beforeEach(() => {
 		OAUTH_STATE: oauthState,
 		JWT_SECRET: "test-jwt-secret",
 		ENV: "prod",
+		OAUTH_LOGIN_ENABLED: "true",
 	} as unknown as Bindings;
 });
 
@@ -248,6 +249,19 @@ describe("GET /:provider/start — binding cookie name", () => {
 		expect(res.status).toBe(302);
 		return res.headers.get("set-cookie") ?? "";
 	};
+
+	it("defaults provider sign-in to off", async () => {
+		const disabledByDefault = {
+			...env,
+			OAUTH_LOGIN_ENABLED: undefined,
+			TREE_CACHE: makeKv(),
+			GH_CLIENT_ID: "cid",
+			GH_CLIENT_SECRET: "secret",
+		} as unknown as Record<string, unknown>;
+		const res = await app().request("/github/start", {}, disabledByDefault);
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ error: "oauth_paused" });
+	});
 
 	it("prefixes the cookie in production, with the attributes the prefix needs", async () => {
 		const sc = await start();

@@ -127,7 +127,7 @@ describe("loadFlags — defaults", () => {
 			moderator_email_enabled: false,
 			turnstile_always: false,
 			comment_email_confirmation_enabled: false,
-			oauth_login_enabled: true,
+			oauth_login_enabled: false,
 		});
 	});
 
@@ -170,12 +170,12 @@ describe("loadFlags — env var over default", () => {
 			{},
 			{
 				COMMENT_EMAIL_CONFIRMATION_ENABLED: "true",
-				OAUTH_LOGIN_ENABLED: "false",
+				OAUTH_LOGIN_ENABLED: "true",
 			},
 		);
 		const flags = await loadFlags(env);
 		expect(flags.comment_email_confirmation_enabled).toBe(true);
-		expect(flags.oauth_login_enabled).toBe(false);
+		expect(flags.oauth_login_enabled).toBe(true);
 	});
 
 	it("env var disables a default-on flag", async () => {

@@ -6,6 +6,19 @@ Give operators a reversible way to pause all OAuth sign-in providers without del
 
 ## ADDED Requirements
 
+### Requirement: OAuth sign-in is disabled by default
+
+When neither a database override nor an environment value is configured, the system MUST keep OAuth sign-in disabled.
+
+#### Scenario: A new install has provider credentials but no OAuth setting
+- **WHEN** the widget requests configuration on a new install with OAuth credentials configured
+- **THEN** the system returns no OAuth providers
+- **AND** OAuth start requests are refused
+
+#### Scenario: An operator enables OAuth sign-in
+- **WHEN** an operator explicitly enables OAuth sign-in
+- **THEN** configured providers become available for new sign-in flows
+
 ### Requirement: Operators can pause and resume OAuth sign-in
 
 The system MUST let an authorized operator disable or re-enable new OAuth sign-in across all configured providers without deleting provider credentials.

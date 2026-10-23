@@ -10,6 +10,7 @@ Garrul currently lets a visitor submit a comment without proving control of an e
 - Send a one-time confirmation link and publish the comment only after confirmation; comments flagged by existing spam checks still require moderator approval.
 - Add bounded confirmation email sending and cleanup for expired, unconfirmed submissions.
 - Add an operator-controlled switch to pause all OAuth sign-in providers without removing their credentials. The widget will hide provider buttons and the Worker will refuse new OAuth starts and callbacks while paused.
+- Default OAuth sign-in to off; operators can enable configured providers from Admin → Settings or with `OAUTH_LOGIN_ENABLED=true`.
 - Preserve existing sessions while OAuth sign-in is paused. Existing users can continue using their session until they sign out or it expires; no new OAuth session can be created while paused.
 - Keep the existing anonymous/OAuth comment flow available when email confirmation mode is disabled.
 
