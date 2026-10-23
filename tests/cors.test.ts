@@ -49,6 +49,7 @@ const runMiddleware = async (
 			res = r;
 		},
 		req: {
+			url: `https://comments.example${opts.path}`,
 			header: (name: string) =>
 				name.toLowerCase() === "origin" ? opts.origin : undefined,
 			method: opts.method,
@@ -178,6 +179,22 @@ describe("corsAndCsrf — Origin allowlist on /api/*", () => {
 			});
 			expect(r.kind).toBe("blocked");
 		});
+
+		it("confirmation POST accepts only the Worker's own origin", async () => {
+			const path = `/api/v1/comments/confirm/${"a".repeat(64)}`;
+			const own = await runMiddleware(mw, {
+				method: "POST",
+				path,
+				origin: "https://comments.example",
+			});
+			const forged = await runMiddleware(mw, {
+				method: "POST",
+				path,
+				origin: "https://evil.example.com",
+			});
+			expect(own.kind).toBe("passed");
+			expect(forged.kind).toBe("blocked");
+		});
 	});
 
 	describe("Carve-outs bypass the Origin check", () => {
@@ -201,6 +218,14 @@ describe("corsAndCsrf — Origin allowlist on /api/*", () => {
 			const r = await runMiddleware(mw, {
 				method: "GET",
 				path: "/api/v1/auth/google/callback",
+			});
+			expect(r.kind).toBe("passed");
+		});
+
+		it("GET comment-confirmation link with no Origin → passes (email navigation)", async () => {
+			const r = await runMiddleware(mw, {
+				method: "GET",
+				path: `/api/v1/comments/confirm/${"a".repeat(64)}`,
 			});
 			expect(r.kind).toBe("passed");
 		});

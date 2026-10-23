@@ -679,6 +679,30 @@ export const CONFIG_REGISTRY: ConfigEntry[] = [
 		addedIn: "1.10.0",
 	},
 	{
+		name: "COMMENT_EMAIL_CONFIRMATION_ENABLED",
+		kind: "var",
+		required: false,
+		group: "Feature flags",
+		adminEditable: true,
+		hint: "require inbox confirmation before a comment is published; defaults off",
+		description:
+			"Require every commenter to confirm an email link before a comment can be published. Defaults **off** to preserve the existing posting flow. Needs `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` and `PUBLIC_BASE_URL`; also settable from Admin → Settings.",
+		example: "true",
+		addedIn: "2.29.0",
+	},
+	{
+		name: "OAUTH_LOGIN_ENABLED",
+		kind: "var",
+		required: false,
+		group: "Feature flags",
+		adminEditable: true,
+		hint: "allow new OAuth sign-ins; defaults on",
+		description:
+			"Allow new OAuth sign-ins through configured providers. Defaults **on**; set `false` to pause all providers without deleting credentials. Existing sessions remain valid. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path.",
+		example: "true",
+		addedIn: "2.29.0",
+	},
+	{
 		name: "REACTIONS_ENABLED",
 		kind: "var",
 		required: false,

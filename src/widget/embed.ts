@@ -71,6 +71,11 @@ import {
 	editWindowState,
 } from "./edit-window";
 import { absoluteTime, isoTime, relativeTime } from "./time";
+import {
+	commentConfirmationEmailField,
+	commentConfirmationFailure,
+	commentConfirmationOutcome,
+} from "./comment-confirmation";
 // The mount request and the wire shapes it carries. Kept out of this file so the
 // fallback rule can be tested without a DOM — see boot.ts's header.
 import {
@@ -701,6 +706,9 @@ type WidgetCtx = {
 	// composer's notify checkbox — because POST /api/v1/subscribe 503s without
 	// them, and an opt-in that cannot possibly deliver is worse than no opt-in.
 	subscriptionsEnabled: boolean;
+	// When on, every new comment needs an inbox confirmation, even for a
+	// signed-in reader. Missing on an older server is the historical off state.
+	commentEmailConfirmationEnabled: boolean;
 	// Reply-collapse tuning (server config). repliesPerThread: replies shown
 	// under a parent before a "Show N more" button (0 = all). autoCollapseDepth:
 	// a comment at depth >= this starts with its replies collapsed (0 = never).
@@ -2149,6 +2157,22 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 		nameInput.required = true;
 		wrap.appendChild(nameInput);
 	}
+	if (ctx.commentEmailConfirmationEnabled) {
+		const field = commentConfirmationEmailField(
+			ctx.commentEmailConfirmationEnabled,
+			ctx.me?.email ?? null,
+		);
+		const email = el("input") as HTMLInputElement;
+		email.className = "gr-comment-confirm-email";
+		email.name = "email";
+		email.type = "email";
+		email.placeholder = s("w.email_ph");
+		email.setAttribute("aria-label", s("w.comment.confirm_email_label"));
+		email.autocomplete = "email";
+		email.required = field?.required ?? true;
+		email.value = field?.value ?? "";
+		wrap.appendChild(email);
+	}
 	wrap.appendChild(buildWritePreview(ta, ctx.apiBase, true));
 
 	// Honeypot: mirrors the top-level form's anti-spam input. Hidden offscreen
@@ -2318,6 +2342,7 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 				body: JSON.stringify({
 					slug: ctx.slug,
 					name: nameInput?.value ?? "",
+					email: (wrap.querySelector(".gr-comment-confirm-email") as HTMLInputElement | null)?.value.trim() ?? "",
 					body: ta.value,
 					parent_id: parent.id,
 					turnstile_token: turnstileToken,
@@ -2326,16 +2351,44 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 					...postMetaFromDataset(ctx.host.dataset),
 				}),
 			});
-			const json = (await res.json()) as {
+			const json = (await res.json().catch(() => ({}))) as {
 				error?: string;
+				reason?: string;
+				status?: string;
+				message?: string;
 				comment?: { id?: string; status?: string };
 			};
 			if (!res.ok) {
 				if (tsGate?.failed) return;
-				showStatus(errBox, json.error ?? `HTTP ${res.status}`);
+				const failure = commentConfirmationFailure(
+					ctx.commentEmailConfirmationEnabled,
+					res.status,
+					json.reason,
+				);
+				showStatus(
+					errBox,
+					failure === "limit"
+						? s("w.comment.confirmation_limited")
+						: failure === "unavailable"
+							? s("w.comment.confirmation_failed")
+							: json.error ?? `HTTP ${res.status}`,
+				);
 				submit.disabled = false;
 				// Single-use once siteverify has seen it: re-challenge, and make the
 				// next wait actually wait instead of replaying the spent token.
+				tsHandle?.reset();
+				tsGate?.clear();
+				return;
+			}
+			if (
+				commentConfirmationOutcome(res.status, json.status).kind ===
+				"confirmation_pending"
+			) {
+				clearDraft(dkey);
+				ta.value = "";
+				ta.dispatchEvent(new Event("input"));
+				showStatus(errBox, s("w.comment.confirmation_pending"), "notice");
+				submit.disabled = false;
 				tsHandle?.reset();
 				tsGate?.clear();
 				return;
@@ -2727,6 +2780,7 @@ const buildForm = (
 	siteKey: string | null,
 	signedIn: boolean,
 	subscriptionsEnabled: boolean,
+	commentEmailConfirmationEnabled: boolean,
 	// Separate from `signedIn` on purpose: it governs one branch, the notify
 	// checkbox's email field. The name field keys off the session existing,
 	// which is a different question.
@@ -2748,6 +2802,22 @@ const buildForm = (
 		name.setAttribute("aria-label", s("w.name_ph"));
 		name.required = true;
 		form.appendChild(name);
+	}
+	if (commentEmailConfirmationEnabled) {
+		const field = commentConfirmationEmailField(
+			commentEmailConfirmationEnabled,
+			sessionEmail,
+		);
+		const email = el("input") as HTMLInputElement;
+		email.className = "gr-comment-confirm-email";
+		email.name = "email";
+		email.type = "email";
+		email.placeholder = s("w.email_ph");
+		email.setAttribute("aria-label", s("w.comment.confirm_email_label"));
+		email.autocomplete = "email";
+		email.required = field?.required ?? true;
+		email.value = field?.value ?? "";
+		form.appendChild(email);
 	}
 
 	const body = el("textarea");
@@ -2780,7 +2850,7 @@ const buildForm = (
 	// deliver — the reader ticked it, posted, and simply never heard anything.
 	// The submit handler reads the checkbox out of the DOM, so its absence is
 	// also what stops the POST being attempted.
-	if (subscriptionsEnabled) {
+	if (subscriptionsEnabled && !commentEmailConfirmationEnabled) {
 		const notifyWrap = el("label", "gr-notify");
 		const notifyCb = el("input") as HTMLInputElement;
 		notifyCb.type = "checkbox";
@@ -2796,7 +2866,7 @@ const buildForm = (
 		// address at all, so the no-field branch posted `{post_slug}` with nothing
 		// for the server to fall back to — a 400 on every tick, silently, since the
 		// subscribe POST here is fire-and-forget.
-		if (sessionEmail == null) {
+		if (sessionEmail == null && !commentEmailConfirmationEnabled) {
 			const emailInput = el("input") as HTMLInputElement;
 			emailInput.className = "gr-email-input";
 			emailInput.name = "email";
@@ -3547,6 +3617,7 @@ const loadOnce = async (
 	// bundle — which sends no such field — keeps offering the notify checkbox it
 	// has always offered. Only an explicit `false` hides the subscribe UI.
 	let subscriptionsEnabled = true;
+	let commentEmailConfirmationEnabled = false;
 	// Defaults mirror the server (src/lib/settings.ts) so a failed/absent
 	// config fetch degrades gracefully to the same behavior.
 	let repliesPerThread = 3;
@@ -3615,6 +3686,8 @@ const loadOnce = async (
 			pageReactionsEnabled = cfg.page_reactions_enabled === true;
 			pageVotesEnabled = cfg.page_votes_enabled === true;
 			subscriptionsEnabled = cfg.subscriptions_enabled !== false;
+			commentEmailConfirmationEnabled =
+				cfg.comment_email_confirmation_enabled === true;
 			if (typeof cfg.replies_per_thread === "number")
 				repliesPerThread = cfg.replies_per_thread;
 			if (typeof cfg.auto_collapse_depth === "number")
@@ -3722,6 +3795,7 @@ const loadOnce = async (
 		pageReactionsEnabled,
 		pageVotesEnabled,
 		subscriptionsEnabled,
+		commentEmailConfirmationEnabled,
 		repliesPerThread,
 		autoCollapseDepth,
 		communityMinVotes,
@@ -3752,6 +3826,7 @@ const loadOnce = async (
 		siteKey,
 		me != null,
 		subscriptionsEnabled,
+		commentEmailConfirmationEnabled,
 		me?.email ?? null,
 		turnstileAlways,
 	);
@@ -4135,6 +4210,9 @@ const submit = async (
 			notice(s("w.ts.interactive"));
 			return;
 		}
+		const confirmEmailInput = form.querySelector(
+			".gr-comment-confirm-email",
+		) as HTMLInputElement | null;
 		const res = await fetch(apiUrl(apiBase, "/api/v1/comments"), {
 			method: "POST",
 			credentials: "include",
@@ -4142,6 +4220,7 @@ const submit = async (
 			body: JSON.stringify({
 				slug,
 				name,
+				email: confirmEmailInput?.value.trim() ?? "",
 				body,
 				turnstile_token: turnstileToken,
 				website: honeypot,
@@ -4149,17 +4228,51 @@ const submit = async (
 				...postMetaFromDataset(host.dataset),
 			}),
 		});
-		const json = (await res.json()) as {
+		const json = (await res.json().catch(() => ({}))) as {
 			error?: string;
+		reason?: string;
+		status?: string;
+		message?: string;
 			comment?: { id?: string; status?: string };
 		};
 		if (!res.ok) {
 			// A Turnstile error can arrive while this request is in flight.
 			if (ts?.gate.failed) return;
-			if (errEl) showStatus(errEl, json.error ?? `HTTP ${res.status}`);
+			const failure = commentConfirmationFailure(
+				Boolean(confirmEmailInput),
+				res.status,
+				json.reason,
+			);
+			if (errEl)
+				showStatus(
+					errEl,
+					failure === "limit"
+						? s("w.comment.confirmation_limited")
+						: failure === "unavailable"
+							? s("w.comment.confirmation_failed")
+							: json.error ?? `HTTP ${res.status}`,
+				);
 			if (submitBtn) submitBtn.disabled = false;
 			// The token is single-use once siteverify has seen it, so re-challenge
 			// and make the next wait actually wait rather than replay it.
+			ts?.reset();
+			ts?.gate.clear();
+			return;
+		}
+		if (
+			commentConfirmationOutcome(res.status, json.status).kind ===
+			"confirmation_pending"
+		) {
+			clearDraft(draftKey(apiOrigin, slug, null));
+			const bodyInput = form.querySelector(
+				".gr-body-input",
+			) as HTMLTextAreaElement | null;
+			if (bodyInput) {
+				bodyInput.value = "";
+				bodyInput.dispatchEvent(new Event("input"));
+			}
+			if (errEl) showStatus(errEl, s("w.comment.confirmation_pending"), "notice");
+			if (submitBtn) submitBtn.disabled = false;
 			ts?.reset();
 			ts?.gate.clear();
 			return;

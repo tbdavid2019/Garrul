@@ -154,12 +154,20 @@ describe("POST /admin/settings — flag writes", () => {
 	it("stores known boolean flags as text, ignores unknown keys and busts the cache", async () => {
 		const { env, kv, runs } = mkEnv();
 		const res = await postSettings(env, {
-			flags: { comments_enabled: false, page_votes_enabled: true, bogus_flag: true },
+			flags: {
+				comments_enabled: false,
+				page_votes_enabled: true,
+				comment_email_confirmation_enabled: true,
+				oauth_login_enabled: false,
+				bogus_flag: true,
+			},
 		});
 		expect(res.status).toBe(200);
 		expect(settingWrites(runs)).toEqual([
 			["comments_enabled", "false"],
 			["page_votes_enabled", "true"],
+			["comment_email_confirmation_enabled", "true"],
+			["oauth_login_enabled", "false"],
 		]);
 		expect(kv.deletedKeys).toContain("settings:resolved");
 	});
@@ -425,6 +433,8 @@ describe("POST /admin/settings — reset", () => {
 		expect(del).toBeDefined();
 		// The delete binds every flag + number key.
 		expect(del!.binds).toContain("comments_enabled");
+		expect(del!.binds).toContain("comment_email_confirmation_enabled");
+		expect(del!.binds).toContain("oauth_login_enabled");
 		expect(del!.binds).toContain("comments_per_page");
 		expect(del!.binds).toContain("auto_collapse_depth");
 		expect(del!.binds).toContain("default_locale");

@@ -65,3 +65,27 @@ describe("GET /api/v1/config form_token_enabled", () => {
 		expect(cfg.form_token_enabled).toBe(true);
 	});
 });
+
+describe("GET /api/v1/config authentication modes", () => {
+	it("exposes safe defaults and no configured providers", async () => {
+		const cfg = await getConfig();
+		expect(cfg.comment_email_confirmation_enabled).toBe(false);
+		expect(cfg.oauth_login_enabled).toBe(true);
+		expect(cfg.providers).toEqual([]);
+	});
+
+	it("hides configured providers while OAuth sign-in is paused", async () => {
+		const cfg = await getConfig({
+			GH_CLIENT_ID: "client",
+			GH_CLIENT_SECRET: "secret",
+			OAUTH_LOGIN_ENABLED: "false",
+		});
+		expect(cfg.oauth_login_enabled).toBe(false);
+		expect(cfg.providers).toEqual([]);
+	});
+
+	it("exposes email-confirmation mode from the resolved runtime flag", async () => {
+		const cfg = await getConfig({ COMMENT_EMAIL_CONFIRMATION_ENABLED: "true" });
+		expect(cfg.comment_email_confirmation_enabled).toBe(true);
+	});
+});

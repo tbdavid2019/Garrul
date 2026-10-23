@@ -50,6 +50,16 @@ const FLAG_META: { key: FlagKey; label: string; help: string }[] = [
 		help: "Accept new comments. When off, the composer is hidden and posting is rejected.",
 	},
 	{
+		key: "comment_email_confirmation_enabled",
+		label: "Require email confirmation for comments",
+		help: "Require every commenter to confirm a link sent to their email before the comment can appear. Needs outbound email configured.",
+	},
+	{
+		key: "oauth_login_enabled",
+		label: "OAuth sign-in",
+		help: "Allow new GitHub, Google, Facebook, X, and Discord sign-ins. Turning this off keeps existing sessions valid but prevents new sign-ins; retain an active admin session or use the documented recovery path.",
+	},
+	{
 		key: "reactions_enabled",
 		label: "Emoji reactions (comments)",
 		help: `Per-comment emoji reactions (${REACTION_GLYPHS}).`,
@@ -491,6 +501,7 @@ export const renderSettings = (
       the matching env var (<code>VOTING_ENABLED</code>, <code>REACTIONS_ENABLED</code>,
       …); "Reset to defaults" clears the overrides so the env vars / built-in
       defaults apply again.</p>
+      <p role="note" class="muted"><strong>OAuth sign-in pause:</strong> Turning this off blocks new provider sign-ins, callbacks already in progress, and handoff exchanges. Existing sessions stay valid. Keep an active admin session; if no admin can sign in, follow the OAuth recovery steps in <code>AGENTS-OPERATE.md</code>.</p>
       ${toggles}
     </div>
 

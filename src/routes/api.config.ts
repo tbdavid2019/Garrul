@@ -104,12 +104,15 @@ export const buildConfigPayload = (
 	// Provider client-id/secret env-var names are typed as plain strings on
 	// ProviderConfig, so index the bindings through a string-keyed view.
 	const envRecord = env as unknown as Record<string, string | undefined>;
-	const providers = (Object.keys(PROVIDERS) as ProviderId[]).filter((p) => {
-		const cfg = PROVIDERS[p];
-		return (
-			!!envRecord[cfg.client_id_env] && !!envRecord[cfg.client_secret_env]
-		);
-	});
+	const providers = flags.oauth_login_enabled
+		? (Object.keys(PROVIDERS) as ProviderId[]).filter((p) => {
+				const cfg = PROVIDERS[p];
+				return (
+					!!envRecord[cfg.client_id_env] &&
+					!!envRecord[cfg.client_secret_env]
+				);
+			})
+		: [];
 	// English costs zero bytes: EN is compiled into the widget bundle. Other
 	// locales get their own table only — missing keys fall back to English per
 	// key in the widget, which is what lets a partial translation ship.
@@ -136,6 +139,9 @@ export const buildConfigPayload = (
 		),
 		edit_window_minutes: numbers.edit_window_minutes,
 		providers,
+		oauth_login_enabled: flags.oauth_login_enabled,
+		comment_email_confirmation_enabled:
+			flags.comment_email_confirmation_enabled,
 		branding_hidden: isTruthy(env.BRANDING_HIDDEN),
 		comments_enabled: flags.comments_enabled,
 		reactions_enabled: flags.reactions_enabled,

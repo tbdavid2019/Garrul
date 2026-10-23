@@ -16,6 +16,7 @@ import { Hono } from "hono";
 import { auth } from "../src/routes/auth";
 import { issueHandoff } from "../src/lib/oauth";
 import { issueSession } from "../src/lib/session";
+import { ADMIN_ID, adminHarness } from "./helpers/admin-sqlite";
 import type { Bindings } from "../src/index";
 
 const makeKv = () => {
@@ -39,11 +40,15 @@ const USER = "01HXXXXXXXXXXXXXXXXXXXXXXX";
 let sessions: ReturnType<typeof makeKv>;
 let oauthState: ReturnType<typeof makeKv>;
 let env: Bindings;
+let harness: ReturnType<typeof adminHarness>;
 
 beforeEach(() => {
+	harness = adminHarness();
 	sessions = makeKv();
 	oauthState = makeKv();
 	env = {
+		DB: harness.env.DB,
+		TREE_CACHE: harness.env.TREE_CACHE,
 		SESSIONS: sessions,
 		OAUTH_STATE: oauthState,
 		JWT_SECRET: "test-jwt-secret",
@@ -54,7 +59,7 @@ beforeEach(() => {
 const app = () => new Hono<{ Bindings: Bindings }>().route("/", auth);
 
 /** Mint a real session the way the callback would, and return its sid. */
-const seedSession = async (): Promise<string> => {
+const seedSession = async (userId = USER): Promise<string> => {
 	let sid = "";
 	const ctx = {
 		env: env as unknown as { SESSIONS: KVNamespace; ENV: string },
@@ -65,7 +70,7 @@ const seedSession = async (): Promise<string> => {
 			}
 		},
 	};
-	await issueSession(ctx, USER);
+	await issueSession(ctx, userId);
 	return sid;
 };
 
@@ -118,6 +123,58 @@ describe("POST /session/exchange", () => {
 			);
 		expect((await call()).status).toBe(200);
 		expect((await call()).status).toBe(400);
+	});
+});
+
+describe("OAuth pause switch", () => {
+	const freshEnv = (oauthEnabled: string) =>
+		({
+			...env,
+			OAUTH_LOGIN_ENABLED: oauthEnabled,
+			TREE_CACHE: makeKv(),
+		}) as unknown as Record<string, unknown>;
+
+	it("blocks provider starts while paused", async () => {
+		const paused = freshEnv("false");
+		const res = await app().request(
+			"/github/start",
+			{},
+			{ ...paused, GH_CLIENT_ID: "cid", GH_CLIENT_SECRET: "secret" },
+		);
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ error: "oauth_paused" });
+	});
+
+	it("keeps existing sessions valid and lets a handoff resume after re-enabling", async () => {
+		const sid = await seedSession(ADMIN_ID);
+		const token = await issueHandoff(
+			oauthState as unknown as KVNamespace,
+			ADMIN_ID,
+		);
+		const paused = freshEnv("false");
+		const me = await app().request(
+			"/me",
+			{ headers: { cookie: `__Host-garrul_sess=${sid}` } },
+			paused,
+		);
+		expect(me.status).toBe(200);
+		expect((await me.json() as { user: { id: string } }).user.id).toBe(ADMIN_ID);
+
+		const exchange = (bindings: Record<string, unknown>) =>
+			app().request(
+				"/session/exchange",
+				{
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ token }),
+				},
+				bindings,
+			);
+		const blocked = await exchange(paused);
+		expect(blocked.status).toBe(503);
+		expect(await blocked.json()).toEqual({ error: "oauth_paused" });
+		const resumed = await exchange(freshEnv("true"));
+		expect(resumed.status).toBe(200);
 	});
 });
 

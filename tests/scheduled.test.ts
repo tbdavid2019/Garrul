@@ -36,10 +36,15 @@ vi.mock("../src/db/audit-retention", async (importOriginal) => ({
 	...(await importOriginal<typeof import("../src/db/audit-retention")>()),
 	runAuditRetention: vi.fn(),
 }));
+vi.mock("../src/db/queries", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../src/db/queries")>()),
+	deleteExpiredPendingCommentSubmissions: vi.fn(),
+}));
 
 import worker from "../src/index";
 import { runIpRetention } from "../src/db/ip-retention";
 import { runAuditRetention } from "../src/db/audit-retention";
+import { deleteExpiredPendingCommentSubmissions } from "../src/db/queries";
 import { runDigest } from "../src/lib/digest";
 import { log } from "../src/lib/log";
 import { runModeratorDigest } from "../src/lib/moderator-digest";
@@ -76,6 +81,9 @@ describe("scheduled handler pass isolation", () => {
 		vi.mocked(runTelegramDigest).mockReset().mockResolvedValue(undefined);
 		vi.mocked(runIpRetention).mockReset().mockResolvedValue(undefined);
 		vi.mocked(runAuditRetention).mockReset().mockResolvedValue(undefined);
+		vi.mocked(deleteExpiredPendingCommentSubmissions)
+			.mockReset()
+			.mockResolvedValue(0);
 		errSpy = vi.spyOn(log, "error").mockImplementation(() => {});
 	});
 
@@ -86,7 +94,7 @@ describe("scheduled handler pass isolation", () => {
 	it("runs all passes under separate waitUntil calls", async () => {
 		const { ctx, tracked } = makeCtx();
 		await scheduled(ctx);
-		expect(tracked).toHaveLength(6);
+		expect(tracked).toHaveLength(7);
 		await Promise.all(tracked);
 		expect(runDigest).toHaveBeenCalledTimes(1);
 		expect(runModeratorDigest).toHaveBeenCalledTimes(1);
@@ -94,6 +102,7 @@ describe("scheduled handler pass isolation", () => {
 		expect(runTelegramDigest).toHaveBeenCalledTimes(1);
 		expect(runIpRetention).toHaveBeenCalledTimes(1);
 		expect(runAuditRetention).toHaveBeenCalledTimes(1);
+		expect(deleteExpiredPendingCommentSubmissions).toHaveBeenCalledTimes(1);
 		expect(errSpy).not.toHaveBeenCalled();
 	});
 
@@ -181,6 +190,23 @@ describe("scheduled handler pass isolation", () => {
 		expect(errSpy).toHaveBeenCalledWith(
 			"scheduled.audit_retention",
 			expect.objectContaining({ error: expect.stringContaining("audit boom") }),
+		);
+	});
+
+	it("an expired-comment cleanup failure doesn't skip the other passes and is caught + logged", async () => {
+		vi.mocked(deleteExpiredPendingCommentSubmissions).mockRejectedValue(
+			new Error("pending cleanup boom"),
+		);
+		const { ctx, tracked } = makeCtx();
+		await scheduled(ctx);
+		await expect(Promise.all(tracked)).resolves.toBeDefined();
+		expect(runDigest).toHaveBeenCalledTimes(1);
+		expect(runAuditRetention).toHaveBeenCalledTimes(1);
+		expect(errSpy).toHaveBeenCalledWith(
+			"scheduled.pending_comment_retention",
+			expect.objectContaining({
+				error: expect.stringContaining("pending cleanup boom"),
+			}),
 		);
 	});
 });

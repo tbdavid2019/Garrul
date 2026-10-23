@@ -100,6 +100,27 @@ export const pl = {
 	"email.digest.permalink": "bezpośredni odnośnik",
 	"email.digest.unsubscribe": "Anuluj subskrypcję tego wątku",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Wpisz prawidłowy adres e-mail.",
+	"err.comment.confirm_unavailable":
+		"Potwierdzenie e-mailem jest tymczasowo niedostępne. Spróbuj ponownie później.",
+	"ui.comment.confirm_pending": "Sprawdź skrzynkę odbiorczą, aby potwierdzić komentarz.",
+	"ui.comment.confirm_prompt": "Potwierdzić ten komentarz do „{title}”?",
+	"ui.comment.confirm_cta": "Potwierdź i opublikuj komentarz",
+	"ui.comment.confirm_note": "Komentarz pojawi się dopiero po potwierdzeniu linku.",
+	"ui.comment.confirmed_page": "Komentarz został potwierdzony i opublikowany.",
+	"ui.comment.confirmed_moderation": "Adres e-mail został potwierdzony. Komentarz czeka na moderację.",
+	"ui.comment.link_expired": "Link potwierdzający wygasł lub został już użyty.",
+	"ui.comment.thread_closed": "Ten wpis nie przyjmuje już komentarzy. Komentarz nie został opublikowany.",
+	"ui.comment.parent_unavailable": "Nie można już odpowiedzieć na ten komentarz. Komentarz nie został opublikowany.",
+	"ui.comment.return_to_post": "Wróć do wpisu",
+	"email.comment_confirm.subject": "Potwierdź swój komentarz do {title}",
+	"email.comment_confirm.heading": "Potwierdź komentarz",
+	"email.comment_confirm.intro": "Potwierdź, że napisano komentarz do {title}. Zostanie opublikowany dopiero po potwierdzeniu.",
+	"email.comment_confirm.ignore": "Jeśli to nie Ty, zignoruj tę wiadomość. Komentarz nie zostanie opublikowany.",
+	"email.comment_confirm.cta": "Sprawdź i potwierdź komentarz",
+	"email.comment_confirm.paste": "Lub otwórz ten link w przeglądarce:",
+
 	// Atom feed
 	"feed.title": "Komentarze do {title}",
 	// Both genders are possible and the feed has no gender data, so the

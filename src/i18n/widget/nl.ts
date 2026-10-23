@@ -53,6 +53,10 @@ export const nl = {
 	// example.com is the RFC-2606 reserved example domain; a translated
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "naam@example.com",
+	"w.comment.confirm_email_label": "E-mailadres voor deze reactie",
+	"w.comment.confirmation_pending": "Controleer je inbox om deze reactie te bevestigen.",
+	"w.comment.confirmation_limited": "Te veel bevestigingsverzoeken. Probeer het later opnieuw.",
+	"w.comment.confirmation_failed": "De bevestigingsmail kon niet worden verzonden. Controleer het adres en probeer het opnieuw.",
 	"w.email_label": "E-mailadres",
 	// First person ("mij"), not second — it keeps the checkbox out of the u/je
 	// choice while still reading as the reader's own request.

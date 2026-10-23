@@ -22,6 +22,9 @@ export const en = {
 	"err.not_found": "Not found.",
 	"err.banned": "Your account is banned.",
 	"err.thread_closed": "Comments are closed on this post.",
+	"err.email.invalid": "Enter a valid email address.",
+	"err.comment.confirm_unavailable":
+		"Email confirmation is temporarily unavailable. Try again later.",
 	"err.internal": "Something went wrong. Try again.",
 
 	// Server-rendered UI strings.
@@ -33,6 +36,20 @@ export const en = {
 	// `ui.*` keys "for widget templates" that the widget never imported while
 	// it kept its own hardcoded twins; they were pure decoys and are gone.
 	"ui.deleted": "[deleted]",
+	"ui.comment.confirm_pending": "Check your inbox to confirm your comment.",
+	"ui.comment.confirm_prompt": "Confirm this comment for \"{title}\"?",
+	"ui.comment.confirm_cta": "Confirm and post comment",
+	"ui.comment.confirm_note":
+		"Nothing is posted until you confirm this email link.",
+	"ui.comment.confirmed_page": "Your comment has been confirmed and posted.",
+	"ui.comment.confirmed_moderation":
+		"Your email is confirmed. Your comment is waiting for moderator review.",
+	"ui.comment.link_expired": "This comment confirmation link expired or was already used.",
+	"ui.comment.thread_closed":
+		"This post no longer accepts comments. Your comment was not posted.",
+	"ui.comment.parent_unavailable":
+		"The reply target is no longer available. Your comment was not posted.",
+	"ui.comment.return_to_post": "Return to the post",
 	"ui.subscribe.pending": "Check your inbox to confirm your subscription.",
 	"ui.subscribe.confirmed": "Subscription confirmed.",
 
@@ -88,6 +105,14 @@ export const en = {
 		"If this wasn't you, ignore this email — without the confirmation click below, no further messages will be sent to this address for this thread.",
 	"email.confirm.cta": "Confirm subscription",
 	"email.confirm.paste": "Or paste this link into your browser:",
+	"email.comment_confirm.subject": "Confirm your comment on {title}",
+	"email.comment_confirm.heading": "Confirm your comment",
+	"email.comment_confirm.intro":
+		"Confirm that you sent a comment on {title}. It will not be posted until you confirm.",
+	"email.comment_confirm.ignore":
+		"If this wasn't you, ignore this email. The comment will not be posted.",
+	"email.comment_confirm.cta": "Review and confirm comment",
+	"email.comment_confirm.paste": "Or open this link in your browser:",
 	"email.digest.subject": 'New replies on "{title}"',
 	"email.digest.heading": {
 		one: '{count} new comment on "{title}"',

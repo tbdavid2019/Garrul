@@ -62,6 +62,10 @@ export const ja = {
 	// example.com is the RFC-2606 reserved example domain; a localized
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "you@example.com",
+	"w.comment.confirm_email_label": "このコメントのメールアドレス",
+	"w.comment.confirmation_pending": "受信箱を確認してコメントを確定してください。",
+	"w.comment.confirmation_limited": "確認リクエストが多すぎます。しばらくしてからお試しください。",
+	"w.comment.confirmation_failed": "確認メールを送信できませんでした。アドレスを確認して再試行してください。",
 	"w.email_label": "メールアドレス",
 	"w.notify": "新しいコメントをメールで受け取る",
 	"w.post_comment": "コメントを投稿",

@@ -43,6 +43,27 @@ export const zhHant = {
 	"email.digest.permalink": "永久連結",
 	"email.digest.unsubscribe": "取消此討論串的訂閱",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "請輸入有效的電子郵件地址。",
+	"err.comment.confirm_unavailable":
+		"目前暫時無法寄送電子郵件確認信，請稍後再試。",
+	"ui.comment.confirm_pending": "請到信箱收信並確認這則留言。",
+	"ui.comment.confirm_prompt": "確認要在「{title}」發布這則留言嗎？",
+	"ui.comment.confirm_cta": "確認並發布留言",
+	"ui.comment.confirm_note": "按下確認前，這則留言不會公開。",
+	"ui.comment.confirmed_page": "留言已確認並發布。",
+	"ui.comment.confirmed_moderation": "電子郵件已確認，留言正在等待管理員審核。",
+	"ui.comment.link_expired": "此留言確認連結已過期或已使用。",
+	"ui.comment.thread_closed": "此文章已不接受留言，因此留言未發布。",
+	"ui.comment.parent_unavailable": "回覆對象已無法使用，因此留言未發布。",
+	"ui.comment.return_to_post": "返回文章",
+	"email.comment_confirm.subject": "請確認你在「{title}」的留言",
+	"email.comment_confirm.heading": "確認留言",
+	"email.comment_confirm.intro": "請確認這則發佈於「{title}」的留言是你提交的。確認後才會發布。",
+	"email.comment_confirm.ignore": "如果這不是你提交的，請忽略此郵件；留言不會發布。",
+	"email.comment_confirm.cta": "查看並確認留言",
+	"email.comment_confirm.paste": "或在瀏覽器中開啟此連結：",
+
 	// Atom feed
 	"feed.title": "「{title}」的留言",
 	"feed.entry_title": "{author} 發表了留言",

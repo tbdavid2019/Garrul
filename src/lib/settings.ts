@@ -36,7 +36,9 @@ export type FlagKey =
 	| "show_deleted_placeholders"
 	| "spam_first_comment_moderate"
 	| "moderator_email_enabled"
-	| "turnstile_always";
+	| "turnstile_always"
+	| "comment_email_confirmation_enabled"
+	| "oauth_login_enabled";
 
 export type ResolvedFlags = Record<FlagKey, boolean>;
 
@@ -117,6 +119,13 @@ const FLAGS: Record<FlagKey, { env: keyof Bindings; default: boolean }> = {
 		env: "TURNSTILE_ALWAYS",
 		default: false,
 	},
+	// Email confirmation is opt-in so existing commenters keep the current flow.
+	comment_email_confirmation_enabled: {
+		env: "COMMENT_EMAIL_CONFIRMATION_ENABLED",
+		default: false,
+	},
+	// OAuth remains enabled unless an operator pauses new provider sign-ins.
+	oauth_login_enabled: { env: "OAUTH_LOGIN_ENABLED", default: true },
 };
 
 export const FLAG_KEYS = Object.keys(FLAGS) as FlagKey[];

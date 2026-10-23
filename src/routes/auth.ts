@@ -37,6 +37,10 @@ import {
 } from "../lib/session";
 import { writeEvent } from "../lib/analytics";
 import { log } from "../lib/log";
+import { loadSettings } from "../lib/settings";
+
+const oauthLoginEnabled = async (env: Bindings): Promise<boolean> =>
+	(await loadSettings(env)).flags.oauth_login_enabled;
 
 // Per-flow cookie: holds the whole signed state payload (lib/oauth issueState).
 // The name's suffix is the first 8 hex chars of the (48-hex-char) state token,
@@ -109,6 +113,9 @@ const parseAllowedOrigins = (raw: string | undefined): Set<string> => {
 auth.get("/:provider/start", async (c) => {
 	const provider = c.req.param("provider");
 	if (!isProvider(provider)) return c.json({ error: "unknown_provider" }, 404);
+	if (!(await oauthLoginEnabled(c.env))) {
+		return c.json({ error: "oauth_paused" }, 503);
+	}
 
 	const cfg = PROVIDERS[provider];
 	const env = c.env as unknown as Record<string, string | undefined>;
@@ -272,6 +279,9 @@ auth.get("/:provider/callback", async (c) => {
 	c.header("Set-Cookie", clearShortCookie(cookieName, c.env), {
 		append: true,
 	});
+	if (!(await oauthLoginEnabled(c.env))) {
+		return c.html(finishHtml(payload.return_origin, false, "oauth_paused"), 503);
+	}
 
 	const cfg = PROVIDERS[provider];
 	const env = c.env as unknown as Record<string, string | undefined>;
@@ -307,6 +317,9 @@ auth.get("/:provider/callback", async (c) => {
 		writeEvent(c.env.ANALYTICS, "oauth.failed", { provider, outcome: "profile_fetch" });
 		return c.html(finishHtml(payload.return_origin, false, "profile_fetch_failed"));
 	}
+	if (!(await oauthLoginEnabled(c.env))) {
+		return c.html(finishHtml(payload.return_origin, false, "oauth_paused"), 503);
+	}
 
 	const adminEmails = parseAdminEmails(env.ADMIN_EMAILS);
 	const user = await upsertOauthUser(
@@ -321,6 +334,11 @@ auth.get("/:provider/callback", async (c) => {
 
 	if (user.is_banned) {
 		return c.html(finishHtml(payload.return_origin, false, "banned"));
+	}
+	// Resolve again after the database upsert: an administrator may have paused
+	// OAuth while this callback was completing the provider round trip.
+	if (!(await oauthLoginEnabled(c.env))) {
+		return c.html(finishHtml(payload.return_origin, false, "oauth_paused"), 503);
 	}
 
 	// Revoke any session the browser already holds before minting a new one,
@@ -349,6 +367,9 @@ auth.post("/signout", async (c) => {
 // Set-Cookie lands in that context's CHIPS partition — see the handoff
 // helpers in src/lib/oauth.ts for the rationale.
 auth.post("/session/exchange", async (c) => {
+	if (!(await oauthLoginEnabled(c.env))) {
+		return c.json({ error: "oauth_paused" }, 503);
+	}
 	let parsed: unknown;
 	try {
 		parsed = await c.req.json();

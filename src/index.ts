@@ -25,6 +25,7 @@ import { runTelegramDigest } from "./lib/telegram-digest";
 import { runWebhookRetries } from "./lib/webhook";
 import { runIpRetention } from "./db/ip-retention";
 import { runAuditRetention } from "./db/audit-retention";
+import { deleteExpiredPendingCommentSubmissions } from "./db/queries";
 import { log, requestLogger } from "./lib/log";
 import { corsAndCsrf } from "./lib/cors";
 import { jsonBodyLimit } from "./lib/body-limit";
@@ -58,6 +59,10 @@ export type Bindings = {
 	// through the settings layer (DB override > env > default false), so the
 	// admin Settings page can flip it without a redeploy.
 	TURNSTILE_ALWAYS: string;
+	// Opt-in per-comment inbox confirmation and reversible pause for new OAuth
+	// sign-ins. Runtime settings can override these environment defaults.
+	COMMENT_EMAIL_CONFIRMATION_ENABLED?: string;
+	OAUTH_LOGIN_ENABLED?: string;
 	GH_CLIENT_ID: string;
 	GH_CLIENT_SECRET: string;
 	GOOGLE_CLIENT_ID: string;
@@ -421,6 +426,16 @@ export default {
 		ctx.waitUntil(
 			runAuditRetention(env).catch((err) => {
 				log.error("scheduled.audit_retention", { error: String(err) });
+			}),
+		);
+		// Unconfirmed comment bodies and inbox addresses are short-lived private
+		// data. The confirmation token expires after 24 hours; this pass removes
+		// expired candidates independently of the other retention jobs.
+		ctx.waitUntil(
+			deleteExpiredPendingCommentSubmissions(env.DB).catch((err) => {
+				log.error("scheduled.pending_comment_retention", {
+					error: String(err),
+				});
 			}),
 		);
 	},
