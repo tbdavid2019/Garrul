@@ -83,6 +83,27 @@ export const fr = {
 	"email.digest.permalink": "lien permanent",
 	"email.digest.unsubscribe": "Se désabonner de ce fil",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Saisissez une adresse e-mail valide.",
+	"err.comment.confirm_unavailable":
+		"La confirmation par e-mail est temporairement indisponible. Réessayez plus tard.",
+	"ui.comment.confirm_pending": "Consultez votre boîte mail pour confirmer le commentaire.",
+	"ui.comment.confirm_prompt": "Confirmer ce commentaire pour « {title} » ?",
+	"ui.comment.confirm_cta": "Confirmer et publier le commentaire",
+	"ui.comment.confirm_note": "Le commentaire ne sera publié qu'après votre confirmation.",
+	"ui.comment.confirmed_page": "Votre commentaire a été confirmé et publié.",
+	"ui.comment.confirmed_moderation": "Votre adresse est confirmée. Votre commentaire attend la modération.",
+	"ui.comment.link_expired": "Ce lien de confirmation a expiré ou a déjà été utilisé.",
+	"ui.comment.thread_closed": "Cet article n'accepte plus de commentaires. Votre commentaire n'a pas été publié.",
+	"ui.comment.parent_unavailable": "La réponse n'est plus disponible. Votre commentaire n'a pas été publié.",
+	"ui.comment.return_to_post": "Retour à l'article",
+	"email.comment_confirm.subject": "Confirmez votre commentaire sur {title}",
+	"email.comment_confirm.heading": "Confirmez votre commentaire",
+	"email.comment_confirm.intro": "Confirmez que vous avez écrit un commentaire sur {title}. Il ne sera publié qu'après confirmation.",
+	"email.comment_confirm.ignore": "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail. Le commentaire ne sera pas publié.",
+	"email.comment_confirm.cta": "Vérifier et confirmer le commentaire",
+	"email.comment_confirm.paste": "Ou ouvrez ce lien dans votre navigateur :",
+
 	// Atom feed
 	"feed.title": "Commentaires sur {title}",
 	"feed.entry_title": "{author} a commenté",

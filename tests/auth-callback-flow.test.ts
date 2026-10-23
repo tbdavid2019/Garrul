@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { auth } from "../src/routes/auth";
 import type { Bindings } from "../src/index";
+import { bustSettingsCache } from "../src/lib/settings";
 import { adminHarness, makeKv } from "./helpers/admin-sqlite";
 import { installMockCaches, uninstallMockCaches } from "./helpers/mock-caches";
 
@@ -22,6 +23,7 @@ const setup = (extra: Record<string, unknown> = {}) => {
 	const oauthState = makeKv();
 	const env = {
 		DB: h.env.DB,
+		TREE_CACHE: h.env.TREE_CACHE,
 		SESSIONS: sessions,
 		OAUTH_STATE: oauthState,
 		ANALYTICS: { writeDataPoint() {} },
@@ -32,6 +34,7 @@ const setup = (extra: Record<string, unknown> = {}) => {
 		GOOGLE_CLIENT_SECRET: "csecret",
 		ALLOWED_ORIGINS: BLOG,
 		ADMIN_EMAILS: "boss@example.com",
+		OAUTH_LOGIN_ENABLED: "true",
 		...extra,
 	} as unknown as Bindings;
 	const app = new Hono<{ Bindings: Bindings }>().route("/", auth);
@@ -54,7 +57,7 @@ const setup = (extra: Record<string, unknown> = {}) => {
 	const users = () =>
 		h.sqlite.prepare("SELECT provider_id, name, role FROM users WHERE provider = 'google'").all();
 	const sessionKeys = () => [...sessions.store.keys()].filter((k) => k.startsWith("sess:"));
-	return { ...h, oauthState, sessions, signIn, users, sessionKeys };
+	return { ...h, bindings: env, call, oauthState, sessions, signIn, users, sessionKeys };
 };
 
 // Token endpoint, then userinfo; each answer is [status, body].
@@ -93,6 +96,45 @@ afterEach(() => {
 });
 
 describe("GET /:provider/callback — full round trip", () => {
+	it("refuses an in-flight callback if OAuth is paused before the provider responds", async () => {
+		let releaseProfile!: () => void;
+		let reachedProfile!: () => void;
+		const profileGate = new Promise<void>((resolve) => {
+			releaseProfile = resolve;
+		});
+		const profileStarted = new Promise<void>((resolve) => {
+			reachedProfile = resolve;
+		});
+		const fetchMock = vi.fn(async (url: string) => {
+			if (String(url).includes("/token")) {
+				return new Response(JSON.stringify({ access_token: "at" }));
+			}
+			reachedProfile();
+			await profileGate;
+			return new Response(JSON.stringify(PROFILE));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const { call, sqlite, bindings, users, sessionKeys } = setup();
+		const start = await call(`/google/start?return=${encodeURIComponent(BLOG)}`);
+		const state = new URL(start.headers.get("location") as string).searchParams.get("state");
+		const cookie = (start.headers.get("set-cookie") as string).split(";", 1)[0];
+		const callback = call(`/google/callback?code=auth-code&state=${state}`, cookie);
+		await profileStarted;
+		sqlite
+			.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)")
+			.run("oauth_login_enabled", "false", Date.now());
+		await bustSettingsCache(bindings);
+		releaseProfile();
+
+		const res = await callback;
+		expect(res.status).toBe(503);
+		expect(await res.text()).toContain("oauth_paused");
+		expect(users()).toEqual([]);
+		expect(sessionKeys()).toEqual([]);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
 	it("creates the user, issues a session and posts a handoff to the opener", async () => {
 		const fetchMock = provider([200, { access_token: "at" }], [200, PROFILE]);
 		const { signIn, users, sessionKeys, oauthState } = setup();

@@ -63,6 +63,7 @@ export type ConfigResponse = {
 	reaction_kinds?: string[];
 	page_reaction_kinds?: string[];
 	subscriptions_enabled?: boolean;
+	comment_email_confirmation_enabled?: boolean;
 	replies_per_thread?: number;
 	auto_collapse_depth?: number;
 	community_min_votes?: number;

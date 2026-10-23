@@ -79,6 +79,14 @@ describe("admin HTML pages", () => {
 		expect(await res.text()).toContain(marker);
 	});
 
+	it("warns that pausing OAuth blocks in-flight sign-ins and links recovery instructions", async () => {
+		const res = await seeded().request("/admin/settings");
+		const html = await res.text();
+		expect(html).toContain("OAuth sign-in pause");
+		expect(html).toContain("callbacks already in progress");
+		expect(html).toContain("AGENTS-OPERATE.md");
+	});
+
 	it.each([
 		"/admin/comments/nope",
 		`/admin/users/01HNOPE`,

@@ -16,7 +16,9 @@ import { Hono } from "hono";
 import { auth } from "../src/routes/auth";
 import { issueHandoff } from "../src/lib/oauth";
 import { issueSession, readSession } from "../src/lib/session";
+import { bustSettingsCache } from "../src/lib/settings";
 import { installMockCaches, uninstallMockCaches } from "./helpers/mock-caches";
+import { ADMIN_ID, adminHarness } from "./helpers/admin-sqlite";
 import type { Bindings } from "../src/index";
 
 const makeKv = () => {
@@ -40,18 +42,24 @@ const USER = "01HXXXXXXXXXXXXXXXXXXXXXXX";
 let sessions: ReturnType<typeof makeKv>;
 let oauthState: ReturnType<typeof makeKv>;
 let env: Bindings;
+let harness: ReturnType<typeof adminHarness>;
 
-beforeEach(() => {
+beforeEach(async () => {
 	installMockCaches();
+	harness = adminHarness();
 	sessions = makeKv();
 	oauthState = makeKv();
 	env = {
+		DB: harness.env.DB,
+		TREE_CACHE: harness.env.TREE_CACHE,
 		SESSIONS: sessions,
 		OAUTH_STATE: oauthState,
 		JWT_SECRET: "test-jwt-secret",
 		IP_HASH_SECRET: "test-ip-hash-secret",
 		ENV: "prod",
+		OAUTH_LOGIN_ENABLED: "true",
 	} as unknown as Bindings;
+	await bustSettingsCache(env);
 });
 
 afterEach(() => uninstallMockCaches());
@@ -61,7 +69,7 @@ const IP = { "cf-connecting-ip": "203.0.113.7" };
 const app = () => new Hono<{ Bindings: Bindings }>().route("/", auth);
 
 /** Mint a real session the way the callback would, and return its sid. */
-const seedSession = async (): Promise<string> => {
+const seedSession = async (userId = USER): Promise<string> => {
 	let sid = "";
 	const ctx = {
 		env: env as unknown as { SESSIONS: KVNamespace; ENV: string },
@@ -72,7 +80,7 @@ const seedSession = async (): Promise<string> => {
 			}
 		},
 	};
-	await issueSession(ctx, USER);
+	await issueSession(ctx, userId);
 	return sid;
 };
 
@@ -158,6 +166,59 @@ describe("POST /session/exchange", () => {
 	});
 });
 
+describe("OAuth pause switch", () => {
+	const freshEnv = (oauthEnabled: string) =>
+		({
+			...env,
+			OAUTH_LOGIN_ENABLED: oauthEnabled,
+			TREE_CACHE: makeKv(),
+		}) as unknown as Record<string, unknown>;
+
+	it("blocks provider starts while paused", async () => {
+		const paused = freshEnv("false");
+		const res = await app().request(
+			"/github/start",
+			{},
+			{ ...paused, GH_CLIENT_ID: "cid", GH_CLIENT_SECRET: "secret" },
+		);
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ error: "oauth_paused" });
+	});
+
+	it("keeps existing sessions valid and lets a handoff resume after re-enabling", async () => {
+		const sid = await seedSession(ADMIN_ID);
+		const token = await issueHandoff(
+			oauthState as unknown as KVNamespace,
+			ADMIN_ID,
+		);
+		const paused = freshEnv("false");
+		const me = await app().request(
+			"/me",
+			{ headers: { cookie: `__Host-garrul_sess=${sid}` } },
+			paused,
+		);
+		expect(me.status).toBe(200);
+		expect((await me.json() as { user: { id: string } }).user.id).toBe(ADMIN_ID);
+
+		const exchange = (bindings: Record<string, unknown>) =>
+			app().request(
+				"/session/exchange",
+				{
+					method: "POST",
+					headers: { ...IP, "content-type": "application/json" },
+					body: JSON.stringify({ token }),
+				},
+				bindings,
+			);
+		const blocked = await exchange(paused);
+		expect(blocked.status).toBe(503);
+		expect(await blocked.json()).toEqual({ error: "oauth_paused" });
+		await bustSettingsCache(env);
+		const resumed = await exchange(freshEnv("true"));
+		expect(resumed.status).toBe(200);
+	});
+});
+
 describe("GET /:provider/callback — state shape", () => {
 	const badStates = [
 		// Would land in a Set-Cookie name: `;` lets the caller append attributes,
@@ -228,6 +289,19 @@ describe("GET /:provider/start — binding cookie name", () => {
 		expect(res.status).toBe(302);
 		return res.headers.get("set-cookie") ?? "";
 	};
+
+	it("defaults provider sign-in to off", async () => {
+		const disabledByDefault = {
+			...env,
+			OAUTH_LOGIN_ENABLED: undefined,
+			TREE_CACHE: makeKv(),
+			GH_CLIENT_ID: "cid",
+			GH_CLIENT_SECRET: "secret",
+		} as unknown as Record<string, unknown>;
+		const res = await app().request("/github/start", {}, disabledByDefault);
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ error: "oauth_paused" });
+	});
 
 	it("prefixes the cookie in production, with the attributes the prefix needs", async () => {
 		const sc = await start();

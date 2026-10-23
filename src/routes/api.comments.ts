@@ -19,11 +19,12 @@
  * Body is sanitized to HTML and stored alongside the raw markdown so the
  * sanitizer can be re-run via scripts/rerender.ts (renderer_version bump).
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import type { Bindings } from "../index";
 import {
 	adminInsertSpamVerdict,
 	countDirectReplies,
+	deletePendingCommentSubmission,
 	enqueueModeratorNotification,
 	enqueueNotificationsForPost,
 	getComment,
@@ -36,11 +37,14 @@ import {
 	insertComment,
 	isIpHashBarred,
 	isNameClaimed,
+	insertPendingCommentSubmission,
 	isUserRole,
 	listCommentsForThreads,
 	listReactionsForComments,
 	listThreadRefsForPost,
 	listUserReactionsOnComments,
+	getPendingCommentSubmissionByTokenHash,
+	promotePendingCommentSubmission,
 	softDeleteComment,
 	TREE_ROW_LIMIT,
 	TREE_SCAN_LIMIT,
@@ -53,11 +57,12 @@ import {
 	type SpamVerdictValue,
 	type TreeComment,
 	type User,
+	type PendingCommentSubmission,
 } from "../db/queries";
 import { allowedPostUrl } from "../lib/cors";
 import { isReservedName, MAX_NAME, nameKey, sanitizeDisplayName } from "../lib/display-name";
 import { identiconSvg } from "../lib/identicon";
-import { sanitizePostTitle } from "../lib/post-title";
+import { fillSubject, sanitizePostTitle, subjectTitle } from "../lib/post-title";
 import { clientIp, requireIpHash } from "../lib/ip-hash";
 import { CURRENT_RENDERER_VERSION, renderMarkdown, validateBody } from "../lib/markdown";
 import { checkRateLimit } from "../lib/ratelimit";
@@ -99,8 +104,17 @@ import {
 	type TreeAuthor,
 	type TreeNode,
 } from "../lib/tree";
-import { FALLBACK_LOCALE, tFor } from "../i18n";
+import { FALLBACK_LOCALE, LOCALES, tFor } from "../i18n";
+import { matchLocale } from "../i18n/negotiate";
 import type { LocaleVars } from "../lib/locale";
+import { confirmSendBudgets, reserveSend } from "../lib/email-budget";
+import { sendEmail } from "../lib/email";
+import {
+	COMMENT_CONFIRMATION_TTL_MS,
+	hashCommentConfirmationToken,
+	randomCommentConfirmationToken,
+	renderCommentConfirmationEmailHtml,
+} from "../lib/comment-confirmation";
 
 type SessionVars = {
 	userId: string | null;
@@ -130,6 +144,10 @@ const comments = new Hono<{
 	Bindings: Bindings;
 	Variables: SessionVars & LocaleVars;
 }>();
+type CommentContext = Context<{
+	Bindings: Bindings;
+	Variables: SessionVars & LocaleVars;
+}>;
 
 /**
  * Exported for `GET /api/v1/bootstrap`, which embeds this route's tree and so
@@ -138,6 +156,7 @@ const comments = new Hono<{
  */
 export const SLUG_RE = /^[a-zA-Z0-9_\-./]{1,200}$/;
 const HONEYPOT_FIELD = "website";
+const COMMENT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Signed-in writes get their own, looser budget. Signing in is a real cost to
 // an attacker and a real signal about a reader, so the anonymous 1-per-10s
@@ -165,6 +184,7 @@ type CreateBody = {
 	slug?: string;
 	parent_id?: string | null;
 	name?: string;
+	email?: string;
 	body?: string;
 	turnstile_token?: string;
 	post_title?: string | null;
@@ -269,7 +289,7 @@ type PendingVerdict = {
 };
 
 type SpamEvaluation = {
-	status: CommentStatus;
+	status: "approved" | "pending";
 	reasons: string[];
 	verdicts: PendingVerdict[];
 };
@@ -461,6 +481,26 @@ comments.post("/", async (c) => {
 	if (!bodyCheck.ok) {
 		const args = bodyCheck.max != null ? { max: bodyCheck.max } : undefined;
 		return c.json({ error: t(bodyCheck.key, args) }, 400);
+	}
+	const confirmationEmail = flags.comment_email_confirmation_enabled
+		? (body.email ?? "").trim().toLowerCase()
+		: null;
+	if (
+		flags.comment_email_confirmation_enabled &&
+		(!confirmationEmail ||
+			confirmationEmail.length > 320 ||
+			!COMMENT_EMAIL_RE.test(confirmationEmail))
+	) {
+		return c.json({ error: t("err.email.invalid") }, 400);
+	}
+	if (
+		flags.comment_email_confirmation_enabled &&
+		(c.env.EMAIL_PROVIDER !== "resend" ||
+			!c.env.RESEND_API_KEY ||
+			!c.env.EMAIL_FROM ||
+			!c.env.PUBLIC_BASE_URL)
+	) {
+		return c.json({ error: t("err.comment.confirm_unavailable") }, 503);
 	}
 
 	const session = await readSession(c);
@@ -721,12 +761,15 @@ comments.post("/", async (c) => {
 	);
 
 	const userAgent = c.req.header("user-agent") ?? null;
+	const spamAuthor = confirmationEmail
+		? { ...author, email: confirmationEmail }
+		: author;
 	const verdict = await evaluateSpam(
 		c.env,
 		flags,
 		numbers,
 		texts,
-		author,
+		spamAuthor,
 		bodyCheck.body,
 		postUrl,
 		userAgent,
@@ -741,6 +784,104 @@ comments.post("/", async (c) => {
 	}
 
 	const body_html = renderMarkdown(bodyCheck.body);
+	if (confirmationEmail) {
+		const reservation = await reserveSend(
+			c.env.DB,
+			confirmSendBudgets(numbers),
+			Date.now(),
+			"comment confirmation",
+		);
+		if (!reservation.ok) {
+			return c.json(
+				{
+					error: t("err.ratelimit"),
+					reason: "send_budget_exhausted",
+				},
+				429,
+			);
+		}
+
+		const token = randomCommentConfirmationToken();
+		const tokenHash = await hashCommentConfirmationToken(token);
+		let candidate: Awaited<
+			ReturnType<typeof insertPendingCommentSubmission>
+		>;
+		try {
+			candidate = await insertPendingCommentSubmission(c.env.DB, {
+				post_slug: slug,
+				parent_id,
+				user_id: author.id,
+				body_md: bodyCheck.body,
+				body_html,
+				renderer_version: CURRENT_RENDERER_VERSION,
+				status_after_confirm: verdict.status,
+				ip_hash: ipHash,
+				user_agent: userAgent,
+				depth,
+				email: confirmationEmail,
+				locale: c.get("locale") ?? FALLBACK_LOCALE,
+				token_hash: tokenHash,
+				spam_verdicts_json: JSON.stringify(verdict.verdicts),
+				expires_at: Date.now() + COMMENT_CONFIRMATION_TTL_MS,
+			});
+		} catch (err) {
+			await reservation.release();
+			throw err;
+		}
+		if (!candidate) {
+			await reservation.release();
+			return c.json(
+				{
+					error: t("err.ratelimit"),
+					reason: "pending_limit_exceeded",
+				},
+				429,
+			);
+		}
+
+		let sent = false;
+		try {
+			const post = await getPost(c.env.DB, slug);
+			const title = subjectTitle(post?.title, slug);
+			const confirmUrl = `${c.env.PUBLIC_BASE_URL}/api/v1/comments/confirm/${token}`;
+			sent = await sendEmail(c.env, {
+				to: confirmationEmail,
+				from: c.env.EMAIL_FROM as string,
+				subject: fillSubject(t("email.comment_confirm.subject"), title),
+				html: renderCommentConfirmationEmailHtml({
+					postTitle: title,
+					confirmUrl,
+					locale: c.get("locale") ?? FALLBACK_LOCALE,
+					t,
+				}),
+			});
+		} catch (err) {
+			log.error("comment.confirmation.send_failed", { error: String(err) });
+		}
+		if (!sent) {
+			try {
+				await deletePendingCommentSubmission(c.env.DB, candidate.id);
+			} catch (err) {
+				log.error("comment.confirmation.cleanup_failed", {
+					error: String(err),
+				});
+			}
+			await reservation.release();
+			return c.json(
+				{ error: t("err.comment.confirm_unavailable") },
+				503,
+			);
+		}
+		return c.json(
+			{
+				ok: true,
+				status: "pending_confirmation",
+				message: t("ui.comment.confirm_pending"),
+			},
+			202,
+		);
+	}
+
 	const inserted = await insertComment(c.env.DB, {
 		post_slug: slug,
 		parent_id,
@@ -822,6 +963,211 @@ comments.post("/", async (c) => {
 	}
 
 	return c.json({ comment: serializeComment(inserted, author) }, 201);
+});
+
+const COMMENT_CONFIRMATION_TOKEN_RE = /^[0-9a-f]{64}$/;
+
+const commentConfirmationLocale = (
+	stored: string | null,
+	request: string | undefined,
+): string =>
+	matchLocale(stored) ?? matchLocale(request) ?? FALLBACK_LOCALE;
+
+const escapeConfirmationHtml = (value: string): string =>
+	value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+
+const commentConfirmationPageHtml = (params: {
+	locale: string;
+	heading: string;
+	message?: string;
+	formAction?: string;
+	confirmText?: string;
+	returnUrl?: string | null;
+	returnText?: string;
+}): string => {
+	const dir = LOCALES[params.locale]?.rtl ? ' dir="rtl"' : "";
+	const form =
+		params.formAction && params.confirmText
+			? `<form method="post" action="${escapeConfirmationHtml(params.formAction)}"><button type="submit">${escapeConfirmationHtml(params.confirmText)}</button></form>`
+			: "";
+	const returnLink =
+		params.returnUrl && params.returnText
+			? `<p><a href="${escapeConfirmationHtml(params.returnUrl)}">${escapeConfirmationHtml(params.returnText)}</a></p>`
+			: "";
+	return `<!doctype html><html lang="${escapeConfirmationHtml(params.locale)}"${dir}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeConfirmationHtml(params.heading)}</title><body style="font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem;color:#111827"><main><h1>${escapeConfirmationHtml(params.heading)}</h1>${params.message ? `<p>${escapeConfirmationHtml(params.message)}</p>` : ""}${form}${returnLink}</main></body></html>`;
+};
+
+const commentConfirmationPage = (
+	c: CommentContext,
+	params: Parameters<typeof commentConfirmationPageHtml>[0],
+) => {
+	c.header("Cache-Control", "no-store");
+	return c.html(commentConfirmationPageHtml(params));
+};
+
+const expiredCommentConfirmationPage = (c: CommentContext) => {
+	const locale = commentConfirmationLocale(null, c.get("locale"));
+	const t = tFor(locale);
+	return commentConfirmationPage(c, {
+		locale,
+		heading: t("ui.comment.link_expired"),
+	});
+};
+
+comments.get("/confirm/:token", async (c) => {
+	const token = c.req.param("token");
+	if (!COMMENT_CONFIRMATION_TOKEN_RE.test(token)) {
+		return expiredCommentConfirmationPage(c);
+	}
+	const tokenHash = await hashCommentConfirmationToken(token);
+	const candidate = await getPendingCommentSubmissionByTokenHash(
+		c.env.DB,
+		tokenHash,
+	);
+	if (!candidate) return expiredCommentConfirmationPage(c);
+
+	const locale = commentConfirmationLocale(candidate.locale, c.get("locale"));
+	const t = tFor(locale);
+	const post = await getPost(c.env.DB, candidate.post_slug);
+	const title = post?.title ?? candidate.post_slug;
+	return commentConfirmationPage(c, {
+		locale,
+		heading: t("ui.comment.confirm_prompt", { title }),
+		message: t("ui.comment.confirm_note"),
+		formAction: new URL(c.req.url).pathname,
+		confirmText: t("ui.comment.confirm_cta"),
+		returnUrl: allowedPostUrl(post?.url, c.env.ALLOWED_ORIGINS),
+		returnText: t("ui.comment.return_to_post"),
+	});
+});
+
+comments.post("/confirm/:token", async (c) => {
+	const token = c.req.param("token");
+	if (!COMMENT_CONFIRMATION_TOKEN_RE.test(token)) {
+		return expiredCommentConfirmationPage(c);
+	}
+	const tokenHash = await hashCommentConfirmationToken(token);
+	const candidate = await getPendingCommentSubmissionByTokenHash(
+		c.env.DB,
+		tokenHash,
+	);
+	if (!candidate) return expiredCommentConfirmationPage(c);
+
+	const locale = commentConfirmationLocale(candidate.locale, c.get("locale"));
+	const t = tFor(locale);
+	const settings = await loadSettings(c.env);
+	const post = await getPost(c.env.DB, candidate.post_slug);
+	const threadState = post
+		? resolveThreadOpen(post, settings.flags, settings.numbers, Date.now())
+		: { open: false as const };
+	if (!threadState.open) {
+		await deletePendingCommentSubmission(c.env.DB, candidate.id);
+		return commentConfirmationPage(c, {
+			locale,
+			heading: t("ui.comment.thread_closed"),
+			returnUrl: allowedPostUrl(post?.url, c.env.ALLOWED_ORIGINS),
+			returnText: t("ui.comment.return_to_post"),
+		});
+	}
+
+	if (candidate.parent_id) {
+		const parent = await getComment(c.env.DB, candidate.parent_id);
+		if (
+			!parent ||
+			parent.post_slug !== candidate.post_slug ||
+			parent.depth + 1 !== candidate.depth ||
+			candidate.depth > MAX_REPLY_DEPTH
+		) {
+			await deletePendingCommentSubmission(c.env.DB, candidate.id);
+			return commentConfirmationPage(c, {
+				locale,
+				heading: t("ui.comment.parent_unavailable"),
+				returnUrl: allowedPostUrl(post?.url, c.env.ALLOWED_ORIGINS),
+				returnText: t("ui.comment.return_to_post"),
+			});
+		}
+	}
+
+	const promoted = await promotePendingCommentSubmission(
+		c.env.DB,
+		tokenHash,
+	);
+	if (!promoted) return expiredCommentConfirmationPage(c);
+	await bustTreeCache(
+		c.env,
+		c.req.url,
+		promoted.post_slug,
+		settings.numbers,
+	);
+
+	const author = await getUser(c.env.DB, promoted.user_id);
+	if (author) {
+		let verdicts: PendingVerdict[] = [];
+		try {
+			const stored = JSON.parse(promoted.spam_verdicts_json) as unknown;
+			if (Array.isArray(stored)) verdicts = stored as PendingVerdict[];
+		} catch {
+			log.warn("spam.verdict.restore_failed", { comment_id: promoted.id });
+		}
+		if (verdicts.length > 0) {
+			const persist = persistVerdicts(c.env.DB, promoted.id, verdicts);
+			if (c.executionCtx) c.executionCtx.waitUntil(persist);
+			else await persist;
+		}
+
+		writeEvent(c.env.ANALYTICS, "comment.posted", {
+			post_slug: promoted.post_slug,
+			provider: author.provider,
+			outcome: promoted.status_after_confirm,
+		});
+		fireWebhook(c.env, c.executionCtx, {
+			event: "comment.posted",
+			comment_id: promoted.id,
+			post_slug: promoted.post_slug,
+			user_id: promoted.user_id,
+			ts: promoted.created_at,
+		});
+
+		if (promoted.status_after_confirm === "approved") {
+			const fanout = (async () => {
+				const count = await enqueueNotificationsForPost(
+					c.env.DB,
+					promoted.post_slug,
+					promoted.id,
+					promoted.email.toLowerCase(),
+				);
+				log.info("notify.enqueued", {
+					count,
+					post_slug: promoted.post_slug,
+				});
+			})();
+			if (c.executionCtx) c.executionCtx.waitUntil(fanout);
+			else await fanout;
+		} else if (settings.flags.moderator_email_enabled) {
+			const notify = enqueueModeratorNotification(
+				c.env.DB,
+				promoted.id,
+				"pending",
+			);
+			if (c.executionCtx) c.executionCtx.waitUntil(notify);
+			else await notify;
+		}
+	}
+	return commentConfirmationPage(c, {
+		locale,
+		heading: t(
+			promoted.status_after_confirm === "approved"
+				? "ui.comment.confirmed_page"
+				: "ui.comment.confirmed_moderation",
+		),
+		returnUrl: allowedPostUrl(post?.url, c.env.ALLOWED_ORIGINS),
+		returnText: t("ui.comment.return_to_post"),
+	});
 });
 
 /**

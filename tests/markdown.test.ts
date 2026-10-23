@@ -70,10 +70,11 @@ describe("renderMarkdown — output safety", () => {
 		const entities = renderMarkdown("&copy; &#169; &#xA9;");
 		expect(entities).toMatch(/&copy; (©|&#169;) (©|&#xA9;)/);
 		expect(entities).not.toContain("&amp;");
-		// A decoded numeric `<` must be re-escaped, never emitted as markup.
-		expect(renderMarkdown("&#60;script&#62;x&#x3c;/script&#x3e;")).toContain(
-			"&lt;script&gt;x&lt;/script&gt;",
-		);
+		// Whether this marked version decodes numeric references or preserves
+		// them, the encoded tag must stay text and never become an HTML element.
+		const numericTag = renderMarkdown("&#60;script&#62;x&#x3c;/script&#x3e;");
+		expect(numericTag).not.toContain("<script>");
+		expect(numericTag).toMatch(/(?:&lt;|&#60;)script(?:&gt;|&#62;)/);
 		expect(renderMarkdown("`a < b`")).toContain("<code>a &lt; b</code>");
 	});
 

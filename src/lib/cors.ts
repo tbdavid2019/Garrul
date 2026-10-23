@@ -38,6 +38,7 @@ const CARVE_OUT_PATHS: readonly RegExp[] = [
 	// would add nothing here and would break every email click.
 	/^\/api\/v1\/subscribe\/confirm\/[^/]+\/?$/,
 	/^\/api\/v1\/subscribe\/unsubscribe\/[^/]+\/?$/,
+	/^\/api\/v1\/comments\/confirm\/[^/]+\/?$/,
 ];
 
 /**
@@ -56,6 +57,7 @@ const SELF_ORIGIN_POST_PATHS: readonly RegExp[] = [
 	// The double-opt-in confirm button, same shape and same reasoning: the
 	// emailed GET renders a form, this POST does the write.
 	/^\/api\/v1\/subscribe\/confirm\/[^/]+\/?$/,
+	/^\/api\/v1\/comments\/confirm\/[^/]+\/?$/,
 	// The other two buttons on that same page: unsubscribe from every thread
 	// this address follows, and unsubscribe one listed row by its id. Same form,
 	// same page, same token capability — they only need their own entries

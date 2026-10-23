@@ -64,6 +64,14 @@ describe("seed-demo comment wipe", () => {
 				VALUES ('n1', 's1', 'c1', ${now});
 			INSERT INTO moderator_notifications (id, comment_id, reason, created_at)
 				VALUES ('m1', 'c1', 'pending', ${now});
+			INSERT INTO pending_comment_submissions (
+				id, post_slug, parent_id, user_id, body_md, body_html,
+				renderer_version, status_after_confirm, depth, email, token_hash,
+				created_at, expires_at
+			) VALUES (
+				'p1', 'welcome', 'c1', 'u1', 'draft', '<p>draft</p>', 1,
+				'approved', 2, 'a@example.com', 'token-hash', ${now}, ${now + 60_000}
+			);
 			INSERT INTO spam_verdicts (comment_id, source, verdict, created_at)
 				VALUES ('c1', 'heuristics', 'spam', ${now});
 		`);
@@ -73,7 +81,10 @@ describe("seed-demo comment wipe", () => {
 
 		expect(count(db, "SELECT count(*) AS n FROM comments WHERE post_slug = 'welcome'")).toBe(0);
 		for (const t of [...COMMENT_CHILD_TABLES, "spam_verdicts"]) {
-			expect(count(db, `SELECT count(*) AS n FROM ${t} WHERE comment_id IN ('c1', 'c2')`)).toBe(0);
+			const where = t === "pending_comment_submissions"
+				? "post_slug = 'welcome' OR parent_id IN ('c1', 'c2')"
+				: "comment_id IN ('c1', 'c2')";
+			expect(count(db, `SELECT count(*) AS n FROM ${t} WHERE ${where}`)).toBe(0);
 		}
 		expect(count(db, "SELECT count(*) AS n FROM comments WHERE id = 'o1'")).toBe(1);
 		expect(count(db, "SELECT count(*) AS n FROM reactions WHERE comment_id = 'o1'")).toBe(1);

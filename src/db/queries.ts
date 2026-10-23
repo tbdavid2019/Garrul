@@ -713,6 +713,181 @@ export const countDirectReplies = async (db: D1Database, id: string): Promise<nu
 			.first<{ n: number }>()
 	)?.n ?? 0;
 
+/** A private comment draft that is promoted only after inbox confirmation. */
+export const PENDING_COMMENT_SUBMISSIONS_PER_EMAIL_CAP = 5;
+
+export type PendingCommentSubmission = {
+	id: string;
+	post_slug: string;
+	parent_id: string | null;
+	user_id: string;
+	body_md: string;
+	body_html: string;
+	renderer_version: number;
+	status_after_confirm: "approved" | "pending";
+	ip_hash: string | null;
+	user_agent: string | null;
+	depth: number;
+	email: string;
+	locale: string | null;
+	token_hash: string;
+	spam_verdicts_json: string;
+	created_at: number;
+	expires_at: number;
+};
+
+type InsertPendingCommentSubmission = Omit<
+	PendingCommentSubmission,
+	"id" | "created_at"
+>;
+
+export const insertPendingCommentSubmission = async (
+	db: D1Database,
+	input: InsertPendingCommentSubmission,
+): Promise<PendingCommentSubmission | null> => {
+	const id = ulid();
+	const created_at = Date.now();
+	const row: PendingCommentSubmission = { id, created_at, ...input };
+	const result = await db
+		.prepare(
+			`INSERT INTO pending_comment_submissions (
+			   id, post_slug, parent_id, user_id, body_md, body_html,
+			   renderer_version, status_after_confirm, ip_hash, user_agent,
+			   depth, email, locale, token_hash, spam_verdicts_json, created_at, expires_at)
+			 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			  WHERE (
+			    SELECT COUNT(*) FROM pending_comment_submissions
+			     WHERE email = ? AND expires_at > ?
+			  ) < ?`,
+		)
+		.bind(
+			row.id,
+			row.post_slug,
+			row.parent_id,
+			row.user_id,
+			row.body_md,
+			row.body_html,
+			row.renderer_version,
+			row.status_after_confirm,
+			row.ip_hash,
+			row.user_agent,
+			row.depth,
+			row.email,
+			row.locale,
+			row.token_hash,
+			row.spam_verdicts_json,
+			row.created_at,
+			row.expires_at,
+			row.email,
+			row.created_at,
+			PENDING_COMMENT_SUBMISSIONS_PER_EMAIL_CAP,
+		)
+		.run();
+	return (result.meta?.changes ?? 0) > 0 ? row : null;
+};
+
+export const countPendingCommentSubmissionsForEmail = async (
+	db: D1Database,
+	email: string,
+	now = Date.now(),
+): Promise<number> => {
+	const row = await db
+		.prepare(
+			`SELECT COUNT(*) AS count
+			   FROM pending_comment_submissions
+			  WHERE email = ? AND expires_at > ?`,
+		)
+		.bind(email, now)
+		.first<{ count: number }>();
+	return row?.count ?? 0;
+};
+
+export const getPendingCommentSubmissionByTokenHash = async (
+	db: D1Database,
+	tokenHash: string,
+	now = Date.now(),
+): Promise<PendingCommentSubmission | null> =>
+	db
+		.prepare(
+			`SELECT id, post_slug, parent_id, user_id, body_md, body_html,
+			        renderer_version, status_after_confirm, ip_hash, user_agent,
+			        depth, email, locale, token_hash, spam_verdicts_json, created_at, expires_at
+			   FROM pending_comment_submissions
+			  WHERE token_hash = ? AND expires_at > ?`,
+		)
+		.bind(tokenHash, now)
+		.first<PendingCommentSubmission>();
+
+/**
+ * Promote a candidate and consume its token in one D1 batch. The insert is
+ * conditional on the still-live token; the following DELETE uses SQLite's
+ * changes() value so a concurrent/replayed request cannot consume a draft it
+ * did not insert. D1 batches are transactional, so a failed insert leaves the
+ * candidate and token available for a safe retry.
+ */
+export const promotePendingCommentSubmission = async (
+	db: D1Database,
+	tokenHash: string,
+	now = Date.now(),
+): Promise<PendingCommentSubmission | null> => {
+	const candidate = await getPendingCommentSubmissionByTokenHash(
+		db,
+		tokenHash,
+		now,
+	);
+	if (!candidate) return null;
+
+	const results = await db.batch([
+		db
+			.prepare(
+				`INSERT INTO comments (
+				   id, post_slug, parent_id, user_id, body_md, body_html,
+				   renderer_version, status, edited_at, deleted_at, deleted_by,
+				   ip_hash, user_agent, created_at, depth)
+				 SELECT id, post_slug, parent_id, user_id, body_md, body_html,
+				        renderer_version, status_after_confirm, NULL, NULL, NULL,
+				        ip_hash, user_agent, created_at, depth
+				   FROM pending_comment_submissions
+				  WHERE token_hash = ? AND expires_at > ?
+				 ON CONFLICT(id) DO NOTHING`,
+			)
+			.bind(tokenHash, now),
+		db
+			.prepare(
+				`DELETE FROM pending_comment_submissions
+				  WHERE token_hash = ? AND expires_at > ? AND changes() = 1`,
+			)
+			.bind(tokenHash, now),
+	]);
+	const inserted = (results[0]?.meta as { changes?: number } | undefined)
+		?.changes;
+	return inserted === 1 ? candidate : null;
+};
+
+export const deleteExpiredPendingCommentSubmissions = async (
+	db: D1Database,
+	now = Date.now(),
+): Promise<number> => {
+	const result = await db
+		.prepare(
+			`DELETE FROM pending_comment_submissions WHERE expires_at <= ?`,
+		)
+		.bind(now)
+		.run();
+	return result.meta?.changes ?? 0;
+};
+
+export const deletePendingCommentSubmission = async (
+	db: D1Database,
+	id: string,
+): Promise<boolean> => {
+	const result = await db
+		.prepare("DELETE FROM pending_comment_submissions WHERE id = ?")
+		.bind(id)
+		.run();
+	return (result.meta?.changes ?? 0) > 0;
+};
+
 export const getComment = async (
 	db: D1Database,
 	id: string,

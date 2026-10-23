@@ -96,6 +96,27 @@ export const ja = {
 	"email.digest.permalink": "パーマリンク",
 	"email.digest.unsubscribe": "このスレッドの通知を解除",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "有効なメールアドレスを入力してください。",
+	"err.comment.confirm_unavailable":
+		"メール確認を一時的に利用できません。しばらくしてから再試行してください。",
+	"ui.comment.confirm_pending": "受信トレイを確認してコメントを承認してください。",
+	"ui.comment.confirm_prompt": "「{title}」へのコメントを確認しますか？",
+	"ui.comment.confirm_cta": "確認してコメントを投稿する",
+	"ui.comment.confirm_note": "このメールのリンクを確認するまで、コメントは投稿されません。",
+	"ui.comment.confirmed_page": "コメントを確認して投稿しました。",
+	"ui.comment.confirmed_moderation": "メールアドレスを確認しました。コメントはモデレーターの確認待ちです。",
+	"ui.comment.link_expired": "この確認リンクは期限切れか、すでに使用されています。",
+	"ui.comment.thread_closed": "この記事ではコメントを受け付けていません。コメントは投稿されませんでした。",
+	"ui.comment.parent_unavailable": "返信先を利用できません。コメントは投稿されませんでした。",
+	"ui.comment.return_to_post": "記事に戻る",
+	"email.comment_confirm.subject": "「{title}」へのコメントを確認してください",
+	"email.comment_confirm.heading": "コメントの確認",
+	"email.comment_confirm.intro": "「{title}」にコメントしたことを確認してください。確認後に投稿されます。",
+	"email.comment_confirm.ignore": "心当たりがない場合はこのメールを無視してください。コメントは投稿されません。",
+	"email.comment_confirm.cta": "コメントを確認して投稿する",
+	"email.comment_confirm.paste": "または次のリンクをブラウザーで開いてください：",
+
 	// Atom feed
 	"feed.title": "「{title}」へのコメント",
 	"feed.entry_title": "{author}がコメントしました",

@@ -68,7 +68,7 @@ try {
 	console.error("[size] public/embed.js missing — run `npm run build:embed`.");
 	process.exit(1);
 }
-if (!publicCopy.equals(raw)) {
+if (publicCopy.length !== raw.length || publicCopy.some((byte, i) => byte !== raw[i])) {
 	console.error("[size] public/embed.js differs from dist/embed.js — rebuild.");
 	process.exit(1);
 }

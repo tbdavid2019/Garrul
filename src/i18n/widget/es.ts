@@ -40,6 +40,10 @@ export const es = {
 	// example.com is the RFC-2606 reserved example domain; a translated
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "nombre@example.com",
+	"w.comment.confirm_email_label": "Correo electrónico para este comentario",
+	"w.comment.confirmation_pending": "Revisa tu bandeja de entrada para confirmar este comentario.",
+	"w.comment.confirmation_limited": "Hay demasiadas solicitudes de confirmación. Inténtalo más tarde.",
+	"w.comment.confirmation_failed": "No se pudo enviar el correo de confirmación. Revisa la dirección e inténtalo de nuevo.",
 	"w.notify": "Avisarme por correo de nuevos comentarios",
 	"w.post_as_staff": "Publicar como equipo",
 	"w.post_comment": "Publicar comentario",

@@ -58,6 +58,10 @@ export const nb = {
 	// example.com is the RFC-2606 reserved example domain; a translated
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "du@example.com",
+	"w.comment.confirm_email_label": "E-postadresse for denne kommentaren",
+	"w.comment.confirmation_pending": "Sjekk innboksen for å bekrefte kommentaren.",
+	"w.comment.confirmation_limited": "For mange bekreftelsesforespørsler. Prøv igjen senere.",
+	"w.comment.confirmation_failed": "Kunne ikke sende bekreftelses-e-post. Sjekk adressen og prøv igjen.",
 	"w.email_label": "E-postadresse",
 	"w.notify": "Varsle meg på e-post om nye kommentarer",
 	"w.post_comment": "Publiser kommentar",

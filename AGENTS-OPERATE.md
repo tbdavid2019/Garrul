@@ -243,6 +243,8 @@ between the two is a build error, not a silent misclassification.
 | `CF_API_TOKEN` | secret | Optional. Cloudflare API token for `/admin/usage`. Least-privilege scopes: Account.Analytics:Read, Account.D1:Read, Account.Workers KV Storage:Read. The page renders setup instructions when either value is unset. | `...` | `wrangler secret put` / `.dev.vars` |
 | `GITHUB_TOKEN` | secret | Optional. Raises the GitHub API rate limit for the `/admin/*` "update available" check. Unauthenticated calls allow 60 req/hr per IP and Cloudflare egress IPs are shared across colos. The check only reads public release metadata, so the token needs **no** scopes or permissions: a fine-grained PAT with no repository access, or a classic PAT with every scope unchecked. Do not grant `public_repo` — despite the name it is read **and write** on all your public repos. | `github_pat_...` | `wrangler secret put` / `.dev.vars` |
 | `COMMENTS_ENABLED` | var | Master switch for new comment creation. Defaults **on**; set `0`/`false`/`no`/`off` to close commenting instance-wide (existing comments stay visible read-only, the widget shows a "Comments are closed." notice, and `POST /api/v1/comments` returns 403). | `true` | `wrangler.toml` |
+| `COMMENT_EMAIL_CONFIRMATION_ENABLED` | var | Require every commenter to confirm an email link before a comment can be published. Defaults **off** to preserve the existing posting flow. Needs `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` and `PUBLIC_BASE_URL`; also settable from Admin → Settings. | `true` | `wrangler.toml` default; **Admin → Settings** overrides |
+| `OAUTH_LOGIN_ENABLED` | var | Allow new OAuth sign-ins through configured providers. Defaults **off**; set `true` to enable configured providers. Existing sessions remain valid while sign-in is paused. Also settable from Admin → Settings; retain an active admin session or use the documented recovery path. | `false` | `wrangler.toml` default; **Admin → Settings** overrides |
 | `REACTIONS_ENABLED` | var | Comment emoji reactions. Defaults **on**; same falsy-spelling semantics. Disabling hides the reaction bar and 403s `POST /api/v1/reactions`. | `true` | `wrangler.toml` |
 | `VOTING_ENABLED` | var | Comment voting (up/down buttons in the widget). Defaults **on** when unset; set `0`/`false`/`no`/`off` to disable instance-wide. | `true` | `wrangler.toml` |
 | `DOWNVOTES_ENABLED` | var | Downvote button. Same defaults-on semantics. Applies to **both** comment votes and page votes (a brigading-mitigation switch); independent of `VOTING_ENABLED`. | `true` | `wrangler.toml` |
@@ -632,7 +634,29 @@ Five providers ship: GitHub, Google, Facebook, X, and Discord (the
 last three added in v1.13.0). Generic OIDC is v2 backlog. The operator
 picks which to enable by setting the matching client ID + secret — a
 provider with no credentials is simply omitted from the sign-in options.
-If all are unset, the widget shows only the anonymous form.
+OAuth sign-in is **off by default**, even when credentials are present. Set
+`OAUTH_LOGIN_ENABLED = "true"` or enable OAuth sign-in in Admin → Settings to
+show configured providers. If all provider credentials are unset, the widget
+shows only the anonymous form.
+
+To pause every provider without deleting credentials, turn **OAuth sign-in**
+off in Admin → Settings or set `OAUTH_LOGIN_ENABLED = "false"`. A database
+setting overrides the environment value, so switch it off in Admin → Settings
+if it was explicitly enabled there. This blocks new starts, callbacks already
+in progress, and session-handoff exchanges. Existing sessions remain valid.
+Before pausing, keep an admin session open.
+
+If the runtime setting prevents administrators from signing in again, deploy
+with `OAUTH_LOGIN_ENABLED = "true"`, then remove the runtime override from the
+correct remote D1 database so the environment default takes effect:
+
+```sh
+npx wrangler d1 execute DB --remote --command \
+  "DELETE FROM settings WHERE key = 'oauth_login_enabled';"
+```
+
+Set the environment default to `true` before running that command. The
+environment value alone cannot override an existing settings row.
 
 Callback URL pattern (driven by `OAUTH_CALLBACK_BASE`):
 
@@ -774,14 +798,32 @@ Triggers (events that produce a send):
   deliberately *not* gated on `RESEND_API_KEY`: a widget that went dark
   when only the secret was missing would hide that misconfiguration
   instead of surfacing it in the logs.
+- **Comment confirmation** — when `COMMENT_EMAIL_CONFIRMATION_ENABLED` is
+  on, every new comment (including comments from signed-in users) is held
+  privately until its recipient confirms the link. Configure
+  `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`, and
+  `PUBLIC_BASE_URL` before enabling it. Confirmation is per submission; it
+  does not create an account or change edit/delete permissions. A mailbox may
+  have up to **5 live unconfirmed comments** at once. Links expire after
+  **24 hours**, and the scheduled retention pass deletes expired drafts.
+  Comment confirmations and subscription confirmations share the global
+  `CONFIRM_SEND_BURST_MAX` / `CONFIRM_SEND_DAILY_MAX` ceiling below. A failed
+  mail-provider send removes the private draft and refunds its reserved slot.
+  The comment request waits for the confirmation email; ordinary
+  notifications remain queued for cron. Opening the emailed link only shows a
+  confirmation form; the same-origin form POST performs the write so a mail
+  scanner's GET cannot publish the comment. Existing spam checks run before the
+  email is sent, and a confirmed comment flagged for review stays in the
+  moderation queue.
 - An unsubscribe-link click opens a confirmation page and sends nothing.
   The confirm link works the same way: the emailed GET renders a button,
   and only the same-origin POST behind it marks the subscription confirmed,
   so link-scanning mail gateways cannot complete a double-opt-in.
 
-Nothing sends *inline* on the request path: every notification is
-queued to D1 and flushed by the cron, so a slow or failing Resend never
-delays or fails a reader's comment.
+Ordinary notifications are queued to D1 and flushed by the cron. Comment
+confirmation mail is the exception: the request waits for the provider so
+Garrul can remove the private draft and refund the reserved budget if the
+send fails.
 
 ### The confirmation-email ceiling
 
@@ -792,6 +834,14 @@ The rate limiter is not a hard ceiling there — on the default Cache API
 backend concurrent requests from one identity sustain a multiple of the
 configured rate — and the per-address pending cap is bypassed by
 cycling addresses. So sends are counted directly, in D1:
+
+The same counters also cover comment inbox-confirmation links when
+`COMMENT_EMAIL_CONFIRMATION_ENABLED` is on. This shared ceiling is
+intentional: both are confirmation messages that an unauthenticated
+request can trigger. The per-address limit for comment submissions is 5
+live drafts, and each draft expires after 24 hours. Expired content and
+its email address are removed by the scheduled retention pass. On send
+failure the draft is deleted and the budget reservation is refunded.
 
 | Budget | Default cap | Window | Setting |
 | --- | --- | --- | --- |

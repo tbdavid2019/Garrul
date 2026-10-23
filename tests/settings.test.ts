@@ -140,6 +140,8 @@ describe("loadFlags — defaults", () => {
 			spam_first_comment_moderate: false,
 			moderator_email_enabled: false,
 			turnstile_always: false,
+			comment_email_confirmation_enabled: false,
+			oauth_login_enabled: false,
 		});
 	});
 
@@ -177,6 +179,19 @@ describe("loadFlags — defaults", () => {
 });
 
 describe("loadFlags — env var over default", () => {
+	it("resolves email-confirmation and OAuth environment defaults", async () => {
+		const { env } = mkEnv(
+			{},
+			{
+				COMMENT_EMAIL_CONFIRMATION_ENABLED: "true",
+				OAUTH_LOGIN_ENABLED: "true",
+			},
+		);
+		const flags = await loadFlags(env);
+		expect(flags.comment_email_confirmation_enabled).toBe(true);
+		expect(flags.oauth_login_enabled).toBe(true);
+	});
+
 	it("env var disables a default-on flag", async () => {
 		const { env } = mkEnv({}, { COMMENTS_ENABLED: "0" });
 		const flags = await loadFlags(env);
@@ -216,6 +231,22 @@ describe("loadFlags — env var over default", () => {
 });
 
 describe("loadFlags — DB row over env var", () => {
+	it("DB rows override both new environment defaults", async () => {
+		const { env } = mkEnv(
+			{
+				comment_email_confirmation_enabled: "false",
+				oauth_login_enabled: "true",
+			},
+			{
+				COMMENT_EMAIL_CONFIRMATION_ENABLED: "true",
+				OAUTH_LOGIN_ENABLED: "false",
+			},
+		);
+		const flags = await loadFlags(env);
+		expect(flags.comment_email_confirmation_enabled).toBe(false);
+		expect(flags.oauth_login_enabled).toBe(true);
+	});
+
 	it("DB row beats a conflicting env var (DB on, env off)", async () => {
 		const { env } = mkEnv(
 			{ comments_enabled: "true" },

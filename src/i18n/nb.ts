@@ -101,6 +101,27 @@ export const nb = {
 	"email.digest.permalink": "permalenke",
 	"email.digest.unsubscribe": "Meld av denne tråden",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Skriv inn en gyldig e-postadresse.",
+	"err.comment.confirm_unavailable":
+		"E-postbekreftelse er midlertidig utilgjengelig. Prøv igjen senere.",
+	"ui.comment.confirm_pending": "Sjekk innboksen for å bekrefte kommentaren.",
+	"ui.comment.confirm_prompt": "Bekreft kommentaren til «{title}»?",
+	"ui.comment.confirm_cta": "Bekreft og publiser kommentaren",
+	"ui.comment.confirm_note": "Kommentaren publiseres først når du bekrefter lenken.",
+	"ui.comment.confirmed_page": "Kommentaren er bekreftet og publisert.",
+	"ui.comment.confirmed_moderation": "E-postadressen er bekreftet. Kommentaren venter på moderering.",
+	"ui.comment.link_expired": "Bekreftelseslenken er utløpt eller allerede brukt.",
+	"ui.comment.thread_closed": "Dette innlegget tar ikke lenger imot kommentarer. Kommentaren ble ikke publisert.",
+	"ui.comment.parent_unavailable": "Det er ikke lenger mulig å svare på denne kommentaren. Kommentaren ble ikke publisert.",
+	"ui.comment.return_to_post": "Tilbake til innlegget",
+	"email.comment_confirm.subject": "Bekreft kommentaren din på {title}",
+	"email.comment_confirm.heading": "Bekreft kommentaren",
+	"email.comment_confirm.intro": "Bekreft at du skrev en kommentar på {title}. Den publiseres først etter bekreftelsen.",
+	"email.comment_confirm.ignore": "Hvis dette ikke var deg, kan du se bort fra denne e-posten. Kommentaren blir ikke publisert.",
+	"email.comment_confirm.cta": "Se gjennom og bekreft kommentaren",
+	"email.comment_confirm.paste": "Eller åpne denne lenken i nettleseren:",
+
 	// Atom feed
 	"feed.title": "Kommentarer til {title}",
 	"feed.entry_title": "{author} kommenterte",

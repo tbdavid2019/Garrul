@@ -84,6 +84,27 @@ export const es = {
 	"email.digest.permalink": "enlace permanente",
 	"email.digest.unsubscribe": "Cancelar las notificaciones de este hilo",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Introduce una dirección de correo válida.",
+	"err.comment.confirm_unavailable":
+		"La confirmación por correo no está disponible temporalmente. Inténtalo más tarde.",
+	"ui.comment.confirm_pending": "Revisa tu bandeja de entrada para confirmar el comentario.",
+	"ui.comment.confirm_prompt": "¿Confirmas este comentario para «{title}»?",
+	"ui.comment.confirm_cta": "Confirmar y publicar el comentario",
+	"ui.comment.confirm_note": "El comentario no se publicará hasta que confirmes este enlace.",
+	"ui.comment.confirmed_page": "Tu comentario se confirmó y se publicó.",
+	"ui.comment.confirmed_moderation": "Tu correo está confirmado. El comentario espera la revisión de moderación.",
+	"ui.comment.link_expired": "Este enlace de confirmación ha caducado o ya se utilizó.",
+	"ui.comment.thread_closed": "Esta publicación ya no admite comentarios. Tu comentario no se publicó.",
+	"ui.comment.parent_unavailable": "La respuesta ya no está disponible. Tu comentario no se publicó.",
+	"ui.comment.return_to_post": "Volver a la publicación",
+	"email.comment_confirm.subject": "Confirma tu comentario en {title}",
+	"email.comment_confirm.heading": "Confirma tu comentario",
+	"email.comment_confirm.intro": "Confirma que escribiste un comentario en {title}. No se publicará hasta que lo confirmes.",
+	"email.comment_confirm.ignore": "Si no fuiste tú, ignora este correo. El comentario no se publicará.",
+	"email.comment_confirm.cta": "Revisar y confirmar el comentario",
+	"email.comment_confirm.paste": "O abre este enlace en tu navegador:",
+
 	// Atom feed
 	"feed.title": "Comentarios en {title}",
 	"feed.entry_title": "{author} ha comentado",

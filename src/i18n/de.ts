@@ -85,6 +85,27 @@ export const de = {
 	"email.digest.permalink": "Permalink",
 	"email.digest.unsubscribe": "Benachrichtigungen zu diesem Thread abbestellen",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Gib eine gültige E-Mail-Adresse ein.",
+	"err.comment.confirm_unavailable":
+		"Die E-Mail-Bestätigung ist vorübergehend nicht verfügbar. Versuch es später erneut.",
+	"ui.comment.confirm_pending": "Prüfe deinen Posteingang, um den Kommentar zu bestätigen.",
+	"ui.comment.confirm_prompt": "Diesen Kommentar für „{title}“ bestätigen?",
+	"ui.comment.confirm_cta": "Kommentar bestätigen und veröffentlichen",
+	"ui.comment.confirm_note": "Der Kommentar wird erst nach der Bestätigung veröffentlicht.",
+	"ui.comment.confirmed_page": "Dein Kommentar wurde bestätigt und veröffentlicht.",
+	"ui.comment.confirmed_moderation": "Deine E-Mail ist bestätigt. Dein Kommentar wartet auf die Prüfung durch das Team.",
+	"ui.comment.link_expired": "Dieser Bestätigungslink ist abgelaufen oder wurde bereits verwendet.",
+	"ui.comment.thread_closed": "Dieser Beitrag nimmt keine Kommentare mehr an. Dein Kommentar wurde nicht veröffentlicht.",
+	"ui.comment.parent_unavailable": "Das Antwortziel ist nicht mehr verfügbar. Dein Kommentar wurde nicht veröffentlicht.",
+	"ui.comment.return_to_post": "Zurück zum Beitrag",
+	"email.comment_confirm.subject": "Bestätige deinen Kommentar zu {title}",
+	"email.comment_confirm.heading": "Kommentar bestätigen",
+	"email.comment_confirm.intro": "Bestätige, dass du einen Kommentar zu {title} geschrieben hast. Er wird erst danach veröffentlicht.",
+	"email.comment_confirm.ignore": "Falls du das nicht warst, ignoriere diese E-Mail. Der Kommentar wird nicht veröffentlicht.",
+	"email.comment_confirm.cta": "Kommentar prüfen und bestätigen",
+	"email.comment_confirm.paste": "Oder öffne diesen Link im Browser:",
+
 	// Atom feed
 	"feed.title": "Kommentare zu {title}",
 	"feed.entry_title": "{author} hat kommentiert",

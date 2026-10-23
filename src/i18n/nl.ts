@@ -98,6 +98,27 @@ export const nl = {
 	"email.digest.permalink": "permalink",
 	"email.digest.unsubscribe": "Afmelden voor deze discussie",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Vul een geldig e-mailadres in.",
+	"err.comment.confirm_unavailable":
+		"E-mailbevestiging is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
+	"ui.comment.confirm_pending": "Controleer je inbox om de reactie te bevestigen.",
+	"ui.comment.confirm_prompt": "Deze reactie voor “{title}” bevestigen?",
+	"ui.comment.confirm_cta": "Reactie bevestigen en plaatsen",
+	"ui.comment.confirm_note": "De reactie wordt pas geplaatst nadat je dit bevestigt.",
+	"ui.comment.confirmed_page": "Je reactie is bevestigd en geplaatst.",
+	"ui.comment.confirmed_moderation": "Je e-mailadres is bevestigd. Je reactie wacht op moderatie.",
+	"ui.comment.link_expired": "Deze bevestigingslink is verlopen of al gebruikt.",
+	"ui.comment.thread_closed": "Op dit bericht kun je geen reacties meer plaatsen. Je reactie is niet geplaatst.",
+	"ui.comment.parent_unavailable": "Je kunt niet meer op deze reactie antwoorden. Je reactie is niet geplaatst.",
+	"ui.comment.return_to_post": "Terug naar het bericht",
+	"email.comment_confirm.subject": "Bevestig je reactie op {title}",
+	"email.comment_confirm.heading": "Bevestig je reactie",
+	"email.comment_confirm.intro": "Bevestig dat jij een reactie op {title} hebt geschreven. De reactie wordt pas daarna geplaatst.",
+	"email.comment_confirm.ignore": "Was jij dit niet, negeer deze e-mail dan. De reactie wordt niet geplaatst.",
+	"email.comment_confirm.cta": "Reactie bekijken en bevestigen",
+	"email.comment_confirm.paste": "Of open deze link in je browser:",
+
 	// Atom feed
 	"feed.title": "Reacties op {title}",
 	"feed.entry_title": "{author} heeft gereageerd",

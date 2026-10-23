@@ -242,6 +242,16 @@
       "addedIn": "1.10.0"
     },
     {
+      "name": "COMMENT_EMAIL_CONFIRMATION_ENABLED",
+      "required": false,
+      "addedIn": "2.41.0"
+    },
+    {
+      "name": "OAUTH_LOGIN_ENABLED",
+      "required": false,
+      "addedIn": "2.41.0"
+    },
+    {
       "name": "REACTIONS_ENABLED",
       "required": false,
       "addedIn": "1.10.0"
@@ -407,7 +417,9 @@
     "0029_owner_login.sql",
     "0030_thread_and_retention_indexes.sql",
     "0031_admin_list_indexes.sql",
-    "0032_page_engagement_totals.sql"
+    "0032_page_engagement_totals.sql",
+    "0033_pending_comment_submissions.sql",
+    "0034_pending_comment_locale.sql"
   ],
   "breakingChanges": [
     {

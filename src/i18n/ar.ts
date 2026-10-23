@@ -13,6 +13,8 @@ export const ar = {
 	"err.name.required": "اسم العرض مطلوب.",
 	"err.name.too_long": "اسم العرض طويل جدًا (الحد الأقصى {max} حرفًا).",
 	"err.name.reserved": "هذا الاسم غير متاح للتعليقات المجهولة. اختر اسمًا آخر أو سجّل الدخول.",
+	"err.email.invalid": "أدخل عنوان بريد إلكتروني صالحًا.",
+	"err.comment.confirm_unavailable": "تأكيد التعليق بالبريد الإلكتروني غير متاح حاليًا.",
 	"err.turnstile.required": "تعذّر التحقق من مكافحة الرسائل المزعجة. حدّث الصفحة وحاول مرة أخرى.",
 	"err.turnstile.invalid": "تعذّر التحقق من مكافحة الرسائل المزعجة. حدّث الصفحة وحاول مرة أخرى.",
 	"err.ratelimit": "عدد التعليقات كبير جدًا. تمهّل وحاول مجددًا بعد قليل.",
@@ -30,6 +32,16 @@ export const ar = {
 
 	// Server-rendered reader UI
 	"ui.deleted": "[محذوف]",
+	"ui.comment.confirm_pending": "تحقق من بريدك الوارد لنرسل رابط تأكيد تعليقك.",
+	"ui.comment.confirm_prompt": "هل تريد تأكيد تعليقك على «{title}» ونشره؟",
+	"ui.comment.confirm_cta": "تأكيد التعليق ونشره",
+	"ui.comment.confirm_note": "لن يظهر التعليق قبل تأكيد عنوان بريدك الإلكتروني.",
+	"ui.comment.confirmed_page": "تم تأكيد تعليقك ونشره.",
+	"ui.comment.confirmed_moderation": "تم تأكيد التعليق. ينتظر الآن مراجعة المشرف.",
+	"ui.comment.link_expired": "انتهت صلاحية الرابط أو سبق استخدامه.",
+	"ui.comment.thread_closed": "أُغلقت التعليقات على هذا المنشور قبل تأكيد عنوان بريدك.",
+	"ui.comment.parent_unavailable": "لم يعد التعليق الأصلي متاحًا، لذلك لم يُنشر الرد.",
+	"ui.comment.return_to_post": "العودة إلى المنشور",
 	"ui.subscribe.pending": "تحقق من بريدك الوارد لتأكيد الاشتراك.",
 	"ui.subscribe.confirmed": "تم تأكيد الاشتراك.",
 	"ui.subscribe.link_expired": "انتهت صلاحية الرابط أو سبق استخدامه.",
@@ -48,6 +60,12 @@ export const ar = {
 	"ui.subscribe.unsubscribed_all": "أُلغي اشتراكك في إشعارات التعليقات لكل النقاشات.",
 
 	// Transactional email
+	"email.comment_confirm.subject": "أكد تعليقك على {title}",
+	"email.comment_confirm.heading": "أكد تعليقك",
+	"email.comment_confirm.intro": "طُلب تأكيد هذا التعليق على «{title}».",
+	"email.comment_confirm.ignore": "إذا لم تكتب هذا التعليق، فتجاهل هذه الرسالة. لن يظهر التعليق ما لم تضغط رابط التأكيد أدناه.",
+	"email.comment_confirm.cta": "تأكيد التعليق ونشره",
+	"email.comment_confirm.paste": "أو الصق هذا الرابط في المتصفح:",
 	"email.confirm.subject": "تأكيد اشتراك التعليقات على {title}",
 	"email.confirm.heading": "تأكيد الاشتراك",
 	"email.confirm.intro": "طُلب تأكيد الاشتراك في إشعارات الردود على {title}.",

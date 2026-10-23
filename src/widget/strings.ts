@@ -68,6 +68,10 @@ export const EN = {
 	"w.name_ph": "Your name",
 	"w.body_ph": "Add a comment…",
 	"w.email_ph": "you@example.com",
+	"w.comment.confirm_email_label": "Email address for this comment",
+	"w.comment.confirmation_pending": "Check your inbox to confirm this comment.",
+	"w.comment.confirmation_limited": "Too many confirmation requests. Try again later.",
+	"w.comment.confirmation_failed": "Could not send a confirmation email. Check the address and try again.",
 	"w.email_label": "Email address",
 	// A subscription is UNIQUE (post_slug, email) — it follows the thread, not
 	// your own comment, so every new comment on the post is delivered. The old

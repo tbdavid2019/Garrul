@@ -99,6 +99,27 @@ export const it = {
 	"email.digest.permalink": "permalink",
 	"email.digest.unsubscribe": "Annulla le notifiche per questa discussione",
 
+	// Comment inbox confirmation
+	"err.email.invalid": "Inserisci un indirizzo email valido.",
+	"err.comment.confirm_unavailable":
+		"La conferma via email non è temporaneamente disponibile. Riprova più tardi.",
+	"ui.comment.confirm_pending": "Controlla la posta in arrivo per confermare il commento.",
+	"ui.comment.confirm_prompt": "Confermare questo commento per «{title}»?",
+	"ui.comment.confirm_cta": "Conferma e pubblica il commento",
+	"ui.comment.confirm_note": "Il commento non verrà pubblicato finché non confermi il link.",
+	"ui.comment.confirmed_page": "Il commento è stato confermato e pubblicato.",
+	"ui.comment.confirmed_moderation": "L'indirizzo email è confermato. Il commento è in attesa di moderazione.",
+	"ui.comment.link_expired": "Questo link di conferma è scaduto o è già stato usato.",
+	"ui.comment.thread_closed": "Questo post non accetta più commenti. Il commento non è stato pubblicato.",
+	"ui.comment.parent_unavailable": "La risposta non è più disponibile. Il commento non è stato pubblicato.",
+	"ui.comment.return_to_post": "Torna all'articolo",
+	"email.comment_confirm.subject": "Conferma il tuo commento su {title}",
+	"email.comment_confirm.heading": "Conferma il commento",
+	"email.comment_confirm.intro": "Conferma di aver scritto un commento su {title}. Verrà pubblicato solo dopo la conferma.",
+	"email.comment_confirm.ignore": "Se non hai inviato tu la richiesta, ignora questa email. Il commento non verrà pubblicato.",
+	"email.comment_confirm.cta": "Controlla e conferma il commento",
+	"email.comment_confirm.paste": "Oppure apri questo link nel browser:",
+
 	// Atom feed
 	"feed.title": "Commenti su {title}",
 	"feed.entry_title": "{author} ha commentato",

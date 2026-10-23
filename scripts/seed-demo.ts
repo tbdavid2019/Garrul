@@ -108,12 +108,16 @@ export const COMMENT_CHILD_TABLES = [
 	"reports",
 	"notifications",
 	"moderator_notifications",
+	"pending_comment_submissions",
 ];
 
 export const wipeCommentsSql = (slug: string): string => {
 	const ids = `SELECT id FROM comments WHERE post_slug = '${sqlEsc(slug)}'`;
 	return [
-		...COMMENT_CHILD_TABLES.map((t) => `DELETE FROM ${t} WHERE comment_id IN (${ids})`),
+		...COMMENT_CHILD_TABLES
+			.filter((t) => t !== "pending_comment_submissions")
+			.map((t) => `DELETE FROM ${t} WHERE comment_id IN (${ids})`),
+		`DELETE FROM pending_comment_submissions WHERE post_slug = '${sqlEsc(slug)}' OR parent_id IN (${ids})`,
 		`DELETE FROM comments WHERE post_slug = '${sqlEsc(slug)}'`,
 	].join(";\n");
 };
