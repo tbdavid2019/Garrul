@@ -184,6 +184,7 @@ type CreateBody = {
 	parent_id?: string | null;
 	name?: string;
 	email?: string;
+	avatar_url?: string;
 	body?: string;
 	turnstile_token?: string;
 	post_title?: string | null;
@@ -195,6 +196,9 @@ type CreateBody = {
 	/** Only a strict `true` counts; role-checked below. */
 	as_staff?: unknown;
 };
+
+const DICEBEAR_AVATAR_RE =
+	/^https:\/\/api\.dicebear\.com\/9\.x\/[a-z0-9_-]+\/svg\?seed=[a-zA-Z0-9_.-]+$/;
 
 // Upper bound for a host-supplied publish time (~year 2100), matching the
 // auto_close_at clamp. A bogus far-future value would only ever DELAY that one
@@ -684,6 +688,22 @@ comments.post("/", async (c) => {
 		}
 
 		author = u;
+	}
+
+	const safeAvatarUrl =
+		author.provider === "anon" &&
+		typeof body.avatar_url === "string" &&
+		body.avatar_url.length <= 256 &&
+		DICEBEAR_AVATAR_RE.test(body.avatar_url.trim())
+			? body.avatar_url.trim()
+			: null;
+	if (safeAvatarUrl) {
+		await c.env.DB.prepare(
+			"UPDATE users SET avatar_url = ? WHERE id = ?",
+		)
+			.bind(safeAvatarUrl, author.id)
+			.run();
+		author.avatar_url = safeAvatarUrl;
 	}
 
 	// The staff marker is a claim about the author, so it is checked against

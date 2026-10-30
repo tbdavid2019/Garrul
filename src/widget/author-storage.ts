@@ -19,6 +19,7 @@ export type StorageLike = {
 export type StoredAuthor = {
 	name?: string;
 	email?: string;
+	avatar_url?: string;
 };
 
 export const AUTHOR_STORAGE_PREFIX = "garrul:author:";
@@ -45,6 +46,7 @@ export const getStoredAuthor = (
 		const result: StoredAuthor = {};
 		if (typeof parsed.name === "string") result.name = parsed.name;
 		if (typeof parsed.email === "string") result.email = parsed.email;
+		if (typeof parsed.avatar_url === "string") result.avatar_url = parsed.avatar_url;
 		return result;
 	} catch {
 		return null;
@@ -75,7 +77,12 @@ export const setStoredAuthor = (
 		} else if (existing.email !== undefined) {
 			next.email = existing.email;
 		}
-		if (!next.name && !next.email) {
+		if (data.avatar_url !== undefined) {
+			next.avatar_url = typeof data.avatar_url === "string" ? data.avatar_url.trim() : "";
+		} else if (existing.avatar_url !== undefined) {
+			next.avatar_url = existing.avatar_url;
+		}
+		if (!next.name && !next.email && !next.avatar_url) {
 			storage.removeItem(key);
 			return;
 		}

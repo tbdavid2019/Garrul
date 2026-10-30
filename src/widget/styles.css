@@ -373,7 +373,8 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-
    the composer's autosize into a rubber band. */
 .gr-toolbar-btn, .gr-submit, .gr-actions button, .gr-low-score,
 .gr-vote, .gr-reaction, .gr-sort select, .gr-loadmore, .gr-collapse, .gr-showmore,
-.gr-signin button, .gr-signed button, .gr-attribution a {
+.gr-signin button, .gr-signed button, .gr-attribution a,
+.gr-subscribe-btn, .gr-avatar-dice, .gr-avatar-preview {
 	transition: background-color var(--gr-motion), border-color var(--gr-motion),
 		color var(--gr-motion), opacity var(--gr-motion);
 }
@@ -727,22 +728,37 @@ button:active:not([disabled]) { opacity: 0.75; }
 	gap: 0.5rem;
 	margin-top: 0.5rem;
 }
-.gr-sort { display: flex; gap: 0.4rem; align-items: center; font-size: 0.85em; color: var(--gr-muted); }
+.gr-sort { display: inline-flex; gap: 0.4rem; align-items: center; font-size: 0.85em; color: var(--gr-muted); }
+.gr-sort label { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--gr-muted); font-size: 0.9em; font-weight: 500; cursor: pointer; }
 /* margin-inline-start:auto keeps the bell right-aligned when it is the row's
    only child — space-between alone would park it on the left. */
 .gr-subscribe { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-inline-start: auto; }
-/* Bordered like the sort select beside it, deliberately. A bare emoji floating
-   at the end of the row reads as decoration; the border is what says "press
-   me", and it is the only affordance a reader who never hovers will get, since
-   the meaning otherwise lives in title/aria-label alone. */
+/* Sleek 30x30 icon button with Lucide bell icon and smooth states. */
 .gr-subscribe-btn {
 	font: inherit;
 	background: var(--gr-input-bg);
 	border: 1px solid var(--gr-border);
-	padding: 0.2rem 0.45rem;
-	line-height: 1;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	cursor: pointer;
 	border-radius: var(--gr-radius);
+	color: var(--gr-muted);
+	box-sizing: border-box;
+}
+.gr-bell-glyph {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+.gr-bell-icon, .gr-bell-icon-off {
+	display: block;
+	width: 16px;
+	height: 16px;
 }
 /* The bell and the submit both get disabled while a subscribe POST is open, so
    they need the same busy treatment as the composer, the vote buttons and load
@@ -750,7 +766,7 @@ button:active:not([disabled]) { opacity: 0.75; }
    broken. Declared before the :hover rule so specificity ascends; :hover still
    matches a disabled button, hence the :not() guard. */
 .gr-subscribe-btn[disabled] { opacity: 0.6; cursor: progress; }
-.gr-subscribe-btn:hover:not([disabled]) { border-color: var(--gr-accent); }
+.gr-subscribe-btn:hover:not([disabled]) { border-color: var(--gr-accent); color: var(--gr-accent); }
 /* Awaiting confirmation: a subscription row exists, but no mail flows until the
    reader clicks the emailed link. Neither 🔔 (nothing here yet) nor 🔕 (mail is
    coming, press to stop) is true, so the glyph stays 🔔 and the dashed, dimmed
@@ -831,14 +847,101 @@ button:active:not([disabled]) { opacity: 0.75; }
 .gr-subscribe-drop:hover:not([disabled]) { border-color: var(--gr-accent); }
 .gr-subscribe-empty { margin: 0.4rem 0 0; color: var(--gr-muted); }
 .gr-sort select {
+	appearance: none;
+	-webkit-appearance: none;
 	font: inherit;
-	background: var(--gr-input-bg);
+	background-color: var(--gr-input-bg);
 	color: var(--gr-fg);
 	border: 1px solid var(--gr-border);
 	border-radius: var(--gr-radius);
-	padding: 0.2rem 0.4rem;
+	padding: 0.25rem 0.65rem;
+	padding-inline-end: 1.6rem;
+	padding-inline-start: 0.65rem;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.45rem center;
+	background-size: 14px 14px;
+	cursor: pointer;
+	line-height: 1.4;
+	outline: none;
+}
+:host([dir="rtl"]) .gr-sort select,
+[dir="rtl"] .gr-sort select {
+	background-position: left 0.45rem center;
 }
 .gr-sort select:hover { border-color: var(--gr-accent); }
+.gr-sort select:focus-visible {
+	border-color: var(--gr-accent);
+	outline: 2px solid var(--gr-accent);
+	outline-offset: 1px;
+}
+.gr-author-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+}
+.gr-author-row .gr-name-input {
+	flex: 1;
+	min-width: 0;
+}
+.gr-avatar-picker {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+.gr-avatar-preview {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	object-fit: cover;
+	background: var(--gr-skel);
+	border: 1px solid var(--gr-border);
+	display: block;
+	cursor: pointer;
+	box-sizing: border-box;
+}
+.gr-avatar-preview:hover {
+	border-color: var(--gr-accent);
+}
+.gr-avatar-dice {
+	position: absolute;
+	right: -4px;
+	bottom: -4px;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border-radius: 50%;
+	background: var(--gr-input-bg);
+	border: 1px solid var(--gr-border);
+	color: var(--gr-muted);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: var(--gr-shadow);
+	box-sizing: border-box;
+	line-height: 1;
+}
+.gr-avatar-dice:hover {
+	color: var(--gr-accent);
+	border-color: var(--gr-accent);
+	transform: scale(1.15);
+}
+.gr-avatar-dice.gr-dice-spin .gr-dice-icon {
+	animation: gr-dice-spin 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes gr-dice-spin {
+	0% { transform: rotate(0deg) scale(1); }
+	50% { transform: rotate(180deg) scale(1.2); }
+	100% { transform: rotate(360deg) scale(1); }
+}
+.gr-dice-icon {
+	display: block;
+	width: 11px;
+	height: 11px;
+}
 .gr-reply-form { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
 /* 5em is the floor for an *empty* reply box — shorter than the top-level
    composer's 6em, because a reply is nested inside a thread and shouldn't shove

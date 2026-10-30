@@ -106,4 +106,16 @@ describe("widget stylesheet minification", () => {
 		expect(minified).not.toContain("`");
 		expect(minified).not.toContain("${");
 	});
+
+	it("preserves sort control, subscribe button, and avatar picker styles", () => {
+		expect(minified).toContain("appearance:none");
+		expect(minified).toContain(".gr-subscribe-btn{");
+		expect(minified).toContain("width:30px");
+		expect(minified).toContain("height:30px");
+		expect(minified).toContain(".gr-author-row{");
+		expect(minified).toContain(".gr-avatar-picker{");
+		expect(minified).toContain(".gr-avatar-preview{");
+		expect(minified).toContain(".gr-avatar-dice{");
+		expect(minified).toContain("gr-dice-spin");
+	});
 });

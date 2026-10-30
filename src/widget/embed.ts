@@ -1425,6 +1425,12 @@ const buildPageEngagement = (ctx: WidgetCtx): HTMLElement => {
  * every click, and read back as never-subscribed no matter what. They get the
  * anonymous bell, which works.
  */
+const BELL_ICON_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="gr-bell-icon" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0m-10.47-5.674A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>';
+
+const BELL_OFF_ICON_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="gr-bell-icon-off" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742M2 2l20 20M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/></svg>';
+
 const buildSubscribeBell = (
 	apiBase: string,
 	slug: string,
@@ -1438,7 +1444,7 @@ const buildSubscribeBell = (
 	const wrap = el("div", "gr-subscribe");
 	const btn = el("button", "gr-subscribe-btn");
 	btn.type = "button";
-	const glyph = el("span", "gr-reaction-emoji", "🔔");
+	const glyph = el("span", "gr-bell-glyph");
 	btn.appendChild(glyph);
 	// Announce the outcome: the click's only visible result is this text, and a
 	// reader on a screen reader would otherwise get nothing back at all.
@@ -1468,7 +1474,9 @@ const buildSubscribeBell = (
 			: s("w.subscribe");
 		btn.setAttribute("aria-label", label);
 		btn.title = label;
-		glyph.textContent = subId && !pending ? "🔕" : "🔔";
+		glyph.replaceChildren(
+			parseTrustedHtml(subId && !pending ? BELL_OFF_ICON_SVG : BELL_ICON_SVG),
+		);
 		btn.classList.toggle("gr-subscribe-pending", pending);
 		// A toggle on the managed path, a disclosure on the anonymous one (set
 		// below). Never both — they describe different controls.
@@ -2167,6 +2175,66 @@ const openEditor = (n: TreeNode, ctx: WidgetCtx, main: HTMLElement): void => {
 	bodyEl.insertAdjacentElement("afterend", wrap);
 };
 
+const DICE_ICON_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="gr-dice-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01M8 8h.01M8 16h.01M16 16h.01M12 12h.01"/></svg>';
+
+const DICEBEAR_STYLES = [
+	"avataaars",
+	"adventurer",
+	"lorelei",
+	"bottts",
+	"notionists",
+	"micah",
+	"thumbs",
+] as const;
+
+const generateDiceBearAvatar = (): string => {
+	const style =
+		DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)];
+	const seed = Math.random().toString(36).slice(2, 10);
+	return `https://api.dicebear.com/9.x/${style}/svg?seed=${seed}`;
+};
+
+const buildAvatarPicker = (
+	apiOrigin: string,
+	initialUrl?: string,
+): { wrap: HTMLElement; getAvatarUrl: () => string } => {
+	const authKey = authorStorageKey(apiOrigin);
+	let currentUrl = initialUrl || generateDiceBearAvatar();
+
+	const wrap = el("div", "gr-avatar-picker");
+	const preview = el("img", "gr-avatar-preview") as HTMLImageElement;
+	preview.src = currentUrl;
+	preview.alt = "";
+	preview.setAttribute("referrerpolicy", "no-referrer");
+	preview.width = 36;
+	preview.height = 36;
+
+	const diceBtn = el("button", "gr-avatar-dice") as HTMLButtonElement;
+	diceBtn.type = "button";
+	const label = s("w.avatar.reroll");
+	diceBtn.setAttribute("aria-label", label);
+	diceBtn.title = label;
+	diceBtn.appendChild(parseTrustedHtml(DICE_ICON_SVG));
+
+	const reroll = () => {
+		currentUrl = generateDiceBearAvatar();
+		preview.src = currentUrl;
+		diceBtn.classList.remove("gr-dice-spin");
+		void diceBtn.offsetWidth;
+		diceBtn.classList.add("gr-dice-spin");
+		try {
+			setStoredAuthor(localStorage, authKey, { avatar_url: currentUrl });
+		} catch {}
+	};
+
+	diceBtn.addEventListener("click", reroll);
+	preview.addEventListener("click", reroll);
+
+	wrap.append(preview, diceBtn);
+	return { wrap, getAvatarUrl: () => currentUrl };
+};
+
 const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 	// Mint the timing token now so the honeypot-timing heuristic has
 	// real elapsed seconds to measure when the user eventually submits.
@@ -2192,6 +2260,10 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 
 	let nameInput: HTMLInputElement | null = null;
 	if (!ctx.me) {
+		const authorRow = el("div", "gr-author-row");
+		const picker = buildAvatarPicker(ctx.apiOrigin, stored?.avatar_url);
+		authorRow.appendChild(picker.wrap);
+
 		const input = el("input");
 		nameInput = input;
 		input.className = "gr-name-input";
@@ -2215,7 +2287,8 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 		};
 		input.addEventListener("input", debounceSaveName);
 		input.addEventListener("change", saveName);
-		wrap.appendChild(input);
+		authorRow.appendChild(input);
+		wrap.appendChild(authorRow);
 	}
 	if (isStaff(ctx.me)) wrap.appendChild(buildStaffToggle());
 	if (ctx.commentEmailConfirmationEnabled) {
@@ -2368,11 +2441,16 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 		const replyEmailInput = wrap.querySelector(
 			".gr-comment-confirm-email",
 		) as HTMLInputElement | null;
+		const replyAvatarImg = wrap.querySelector(
+			".gr-avatar-preview",
+		) as HTMLImageElement | null;
+		const avatarUrl = ctx.me ? "" : (replyAvatarImg?.src || stored?.avatar_url || "");
 		try {
 			const authorData: StoredAuthor = {};
 			if (nameInput) authorData.name = nameInput.value;
 			if (replyEmailInput) authorData.email = replyEmailInput.value;
-			if (authorData.name !== undefined || authorData.email !== undefined) {
+			if (avatarUrl) authorData.avatar_url = avatarUrl;
+			if (authorData.name !== undefined || authorData.email !== undefined || authorData.avatar_url !== undefined) {
 				setStoredAuthor(localStorage, authKey, authorData);
 			}
 		} catch {}
@@ -2436,6 +2514,7 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 					turnstile_token: turnstileToken,
 					website: honey.value,
 					form_ts: formTs,
+					...(avatarUrl ? { avatar_url: avatarUrl } : {}),
 					...asStaffField(wrap),
 					...postMetaFromDataset(ctx.host.dataset),
 				}),
@@ -2927,6 +3006,10 @@ const buildForm = (
 	}
 
 	if (!signedIn) {
+		const authorRow = el("div", "gr-author-row");
+		const picker = buildAvatarPicker(apiOrigin, stored?.avatar_url);
+		authorRow.appendChild(picker.wrap);
+
 		const name = el("input");
 		name.className = "gr-name-input";
 		name.name = "name";
@@ -2950,7 +3033,8 @@ const buildForm = (
 		};
 		name.addEventListener("input", debounceSaveName);
 		name.addEventListener("change", saveName);
-		card.prepend(name);
+		authorRow.appendChild(name);
+		card.prepend(authorRow);
 	}
 	if (commentEmailConfirmationEnabled) {
 		const field = commentConfirmationEmailField(
@@ -2982,8 +3066,11 @@ const buildForm = (
 		};
 		email.addEventListener("input", debounceSaveEmail);
 		email.addEventListener("change", saveEmail);
+		const authorRow = card.querySelector(".gr-author-row");
 		const nameInput = card.querySelector(".gr-name-input");
-		if (nameInput) {
+		if (authorRow) {
+			authorRow.after(email);
+		} else if (nameInput) {
 			nameInput.after(email);
 		} else {
 			card.prepend(email);
@@ -4460,13 +4547,16 @@ const submit = async (
 	) as HTMLInputElement | null;
 	const notifyCb = form.querySelector(".gr-notify-cb") as HTMLInputElement | null;
 	const authKey = authorStorageKey(apiOrigin);
+	const avatarPicker = form.querySelector(".gr-avatar-preview") as HTMLImageElement | null;
+	const avatarUrl = avatarPicker?.src || "";
 	try {
 		const authorData: StoredAuthor = {};
 		if (nameInput && name.trim()) authorData.name = name;
 		const emailEl =
 			confirmEmailInput ?? (notifyCb?.checked ? notifyEmailInput : null);
 		if (emailEl && emailEl.value.trim()) authorData.email = emailEl.value;
-		if (authorData.name !== undefined || authorData.email !== undefined) {
+		if (avatarUrl) authorData.avatar_url = avatarUrl;
+		if (authorData.name !== undefined || authorData.email !== undefined || authorData.avatar_url !== undefined) {
 			setStoredAuthor(localStorage, authKey, authorData);
 		}
 	} catch {}
@@ -4487,6 +4577,8 @@ const submit = async (
 			notice(s("w.ts.interactive"));
 			return;
 		}
+		const currentAvatar =
+			(form.querySelector(".gr-avatar-preview") as HTMLImageElement | null)?.src || avatarUrl;
 		const res = await fetch(apiUrl(apiBase, "/api/v1/comments"), {
 			method: "POST",
 			credentials: "include",
@@ -4499,6 +4591,7 @@ const submit = async (
 				turnstile_token: turnstileToken,
 				website: honeypot,
 				form_ts: formTs,
+				...(currentAvatar ? { avatar_url: currentAvatar } : {}),
 				...asStaffField(form),
 				...postMetaFromDataset(host.dataset),
 			}),

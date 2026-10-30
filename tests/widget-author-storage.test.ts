@@ -37,7 +37,7 @@ describe("getStoredAuthor & setStoredAuthor", () => {
 		expect(getStoredAuthor(s, "garrul:author:test")).toBeNull();
 	});
 
-	it("saves and reads author name and email with whitespace trimmed", () => {
+	it("saves and reads author name, email, and avatar_url with whitespace trimmed", () => {
 		const s = fakeStorage();
 		const key = authorStorageKey("https://example.com");
 
@@ -48,6 +48,13 @@ describe("getStoredAuthor & setStoredAuthor", () => {
 		expect(getStoredAuthor(s, key)).toEqual({
 			name: "Alice",
 			email: "alice@example.com",
+		});
+
+		setStoredAuthor(s, key, { avatar_url: "  https://api.dicebear.com/9.x/bottts/svg?seed=abc  " });
+		expect(getStoredAuthor(s, key)).toEqual({
+			name: "Alice",
+			email: "alice@example.com",
+			avatar_url: "https://api.dicebear.com/9.x/bottts/svg?seed=abc",
 		});
 	});
 
@@ -68,7 +75,14 @@ describe("getStoredAuthor & setStoredAuthor", () => {
 			email: "",
 		});
 
-		setStoredAuthor(s, key, { name: "", email: "" });
+		setStoredAuthor(s, key, { avatar_url: "https://api.dicebear.com/9.x/lorelei/svg?seed=xyz" });
+		expect(getStoredAuthor(s, key)).toEqual({
+			name: "Bob",
+			email: "",
+			avatar_url: "https://api.dicebear.com/9.x/lorelei/svg?seed=xyz",
+		});
+
+		setStoredAuthor(s, key, { name: "", email: "", avatar_url: "" });
 		expect(getStoredAuthor(s, key)).toBeNull();
 		expect(s.dump()).toEqual({});
 	});
