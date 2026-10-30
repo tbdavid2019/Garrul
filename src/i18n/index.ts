@@ -117,7 +117,7 @@ export const LOCALES: Record<string, LocaleMeta> = {
 		label: "Traditional Chinese",
 		endonym: "繁體中文",
 		rtl: false,
-		status: "machine-seeded",
+		status: "reviewed",
 	},
 };
 

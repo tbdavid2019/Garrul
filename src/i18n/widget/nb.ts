@@ -59,6 +59,7 @@ export const nb = {
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "du@example.com",
 	"w.comment.confirm_email_label": "E-postadresse for denne kommentaren",
+	"w.comment.confirm_email_ph": "E-post (påkrevd for bekreftelse)",
 	"w.comment.confirmation_pending": "Sjekk innboksen for å bekrefte kommentaren.",
 	"w.comment.confirmation_limited": "For mange bekreftelsesforespørsler. Prøv igjen senere.",
 	"w.comment.confirmation_failed": "Kunne ikke sende bekreftelses-e-post. Sjekk adressen og prøv igjen.",

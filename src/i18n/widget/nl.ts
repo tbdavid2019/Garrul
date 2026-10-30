@@ -54,6 +54,7 @@ export const nl = {
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "naam@example.com",
 	"w.comment.confirm_email_label": "E-mailadres voor deze reactie",
+	"w.comment.confirm_email_ph": "E-mail (vereist voor verificatie)",
 	"w.comment.confirmation_pending": "Controleer je inbox om deze reactie te bevestigen.",
 	"w.comment.confirmation_limited": "Te veel bevestigingsverzoeken. Probeer het later opnieuw.",
 	"w.comment.confirmation_failed": "De bevestigingsmail kon niet worden verzonden. Controleer het adres en probeer het opnieuw.",

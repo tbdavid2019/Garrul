@@ -42,6 +42,7 @@ export const ar = {
 	"w.body_ph": "أضف تعليقًا…",
 	"w.email_ph": "you@example.com",
 	"w.comment.confirm_email_label": "عنوان البريد الإلكتروني لتأكيد هذا التعليق",
+	"w.comment.confirm_email_ph": "البريد الإلكتروني (مطلوب للتحقق)",
 	"w.comment.confirmation_pending": "تحقق من بريدك الوارد لتأكيد هذا التعليق.",
 	"w.comment.confirmation_limited": "طلبات تأكيد كثيرة جدًا. حاول مرة أخرى لاحقًا.",
 	"w.comment.confirmation_failed": "تعذّر إرسال رسالة التأكيد. تحقق من العنوان وحاول مرة أخرى.",

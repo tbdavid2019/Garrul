@@ -60,6 +60,7 @@ export const it = {
 	// lookalike would be somebody's real domain.
 	"w.email_ph": "nome@example.com",
 	"w.comment.confirm_email_label": "Indirizzo email per questo commento",
+	"w.comment.confirm_email_ph": "Email (richiesta per la verifica)",
 	"w.comment.confirmation_pending": "Controlla la posta in arrivo per confermare questo commento.",
 	"w.comment.confirmation_limited": "Troppe richieste di conferma. Riprova più tardi.",
 	"w.comment.confirmation_failed": "Impossibile inviare l’email di conferma. Controlla l’indirizzo e riprova.",

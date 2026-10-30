@@ -480,7 +480,11 @@ button:active:not([disabled]) { opacity: 0.75; }
 	white-space: nowrap;
 	clip-path: inset(50%);
 }
-.gr-error.is-notice { color: var(--gr-notice); }
+.gr-error.is-notice {
+	color: var(--gr-notice);
+	line-height: 1.5;
+	word-break: break-word;
+}
 /* Composer submit errors are inline (text only) — a box-in-a-box reads too
    heavy next to the composer. The :not(.is-notice) guard keeps the boxed
    styling for notices that reuse this same element by toggling .is-notice:

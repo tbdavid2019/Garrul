@@ -69,7 +69,9 @@ export const EN = {
 	"w.body_ph": "Add a comment…",
 	"w.email_ph": "you@example.com",
 	"w.comment.confirm_email_label": "Email address for this comment",
-	"w.comment.confirmation_pending": "Check your inbox to confirm this comment.",
+	"w.comment.confirm_email_ph": "Email (required for verification)",
+	"w.comment.confirmation_pending":
+		"Confirmation email sent! Please check your inbox (or spam) and click the confirmation link to publish your comment.",
 	"w.comment.confirmation_limited": "Too many confirmation requests. Try again later.",
 	"w.comment.confirmation_failed": "Could not send a confirmation email. Check the address and try again.",
 	"w.email_label": "Email address",

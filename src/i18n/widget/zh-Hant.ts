@@ -33,7 +33,9 @@ export const zhHant = {
 	"w.body_ph": "新增留言…",
 	"w.email_ph": "you@example.com",
 	"w.comment.confirm_email_label": "此留言的電子郵件地址",
-	"w.comment.confirmation_pending": "請至收件匣確認這則留言。",
+	"w.comment.confirm_email_ph": "電子信箱（必填，發佈前需收信驗證）",
+	"w.comment.confirmation_pending":
+		"確認信已寄送！請至電子信箱點擊確認連結，完成後留言將立即發佈（若未收到請檢查垃圾郵件匣）。 / Please check your inbox and click the confirmation link to publish your comment.",
 	"w.comment.confirmation_limited": "確認請求過多，請稍後再試。",
 	"w.comment.confirmation_failed": "無法寄出確認信。請檢查電子郵件地址後再試。",
 	"w.email_label": "電子郵件地址",

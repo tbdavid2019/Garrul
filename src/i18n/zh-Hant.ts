@@ -47,7 +47,8 @@ export const zhHant = {
 	"err.email.invalid": "請輸入有效的電子郵件地址。",
 	"err.comment.confirm_unavailable":
 		"目前暫時無法寄送電子郵件確認信，請稍後再試。",
-	"ui.comment.confirm_pending": "請到信箱收信並確認這則留言。",
+	"ui.comment.confirm_pending":
+		"確認信已寄送！請至電子信箱點擊確認連結，完成後留言將立即發佈（若未收到請檢查垃圾郵件匣）。",
 	"ui.comment.confirm_prompt": "確認要在「{title}」發布這則留言嗎？",
 	"ui.comment.confirm_cta": "確認並發布留言",
 	"ui.comment.confirm_note": "按下確認前，這則留言不會公開。",

@@ -38,7 +38,8 @@ export const en = {
 	// `ui.*` keys "for widget templates" that the widget never imported while
 	// it kept its own hardcoded twins; they were pure decoys and are gone.
 	"ui.deleted": "[deleted]",
-	"ui.comment.confirm_pending": "Check your inbox to confirm your comment.",
+	"ui.comment.confirm_pending":
+		"Please check your inbox (or spam) and click the confirmation link to publish your comment.",
 	"ui.comment.confirm_prompt": "Confirm this comment for \"{title}\"?",
 	"ui.comment.confirm_cta": "Confirm and post comment",
 	"ui.comment.confirm_note":

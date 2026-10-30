@@ -43,6 +43,12 @@
 import { loadErrorMessage } from "./load-error";
 import { watchForSignIn } from "./auth-recovery";
 import { autoSizeTextarea } from "./autosize";
+import {
+	type StoredAuthor,
+	authorStorageKey,
+	getStoredAuthor,
+	setStoredAuthor,
+} from "./author-storage";
 import { DRAFT_MAX, adoptLegacyDraft, draftKey, legacyDraftKey } from "./drafts";
 import { createTurnstileGate, type TurnstileGate } from "./turnstile-gate";
 import { makeS, type StringTable, type WidgetKey } from "./strings";
@@ -2176,14 +2182,40 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 		legacyDraftKey(ctx.slug, parent.id),
 	);
 
+	const authKey = authorStorageKey(ctx.apiOrigin);
+	let stored: StoredAuthor | null = null;
+	try {
+		stored = getStoredAuthor(localStorage, authKey);
+	} catch {
+		stored = null;
+	}
+
 	let nameInput: HTMLInputElement | null = null;
 	if (!ctx.me) {
-		nameInput = el("input");
-		nameInput.type = "text";
-		nameInput.placeholder = s("w.name_ph");
-		nameInput.setAttribute("aria-label", s("w.name_ph"));
-		nameInput.required = true;
-		wrap.appendChild(nameInput);
+		const input = el("input");
+		nameInput = input;
+		input.className = "gr-name-input";
+		input.type = "text";
+		input.placeholder = s("w.name_ph");
+		input.setAttribute("aria-label", s("w.name_ph"));
+		input.required = true;
+		if (!input.value && stored?.name) {
+			input.value = stored.name;
+		}
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const saveName = () => {
+			if (timer) clearTimeout(timer);
+			try {
+				setStoredAuthor(localStorage, authKey, { name: input.value });
+			} catch {}
+		};
+		const debounceSaveName = () => {
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(saveName, 300);
+		};
+		input.addEventListener("input", debounceSaveName);
+		input.addEventListener("change", saveName);
+		wrap.appendChild(input);
 	}
 	if (isStaff(ctx.me)) wrap.appendChild(buildStaffToggle());
 	if (ctx.commentEmailConfirmationEnabled) {
@@ -2195,11 +2227,27 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 		email.className = "gr-comment-confirm-email";
 		email.name = "email";
 		email.type = "email";
-		email.placeholder = s("w.email_ph");
+		email.placeholder = s("w.comment.confirm_email_ph");
 		email.setAttribute("aria-label", s("w.comment.confirm_email_label"));
 		email.autocomplete = "email";
 		email.required = field?.required ?? true;
 		email.value = field?.value ?? "";
+		if (!email.value && stored?.email) {
+			email.value = stored.email;
+		}
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const saveEmail = () => {
+			if (timer) clearTimeout(timer);
+			try {
+				setStoredAuthor(localStorage, authKey, { email: email.value });
+			} catch {}
+		};
+		const debounceSaveEmail = () => {
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(saveEmail, 300);
+		};
+		email.addEventListener("input", debounceSaveEmail);
+		email.addEventListener("change", saveEmail);
 		wrap.appendChild(email);
 	}
 	wrap.appendChild(buildWritePreview(ta, ctx.apiBase, true));
@@ -2317,6 +2365,17 @@ const buildReplyForm = (parent: TreeNode, ctx: WidgetCtx): HTMLElement => {
 
 	wrap.addEventListener("submit", async (e) => {
 		e.preventDefault();
+		const replyEmailInput = wrap.querySelector(
+			".gr-comment-confirm-email",
+		) as HTMLInputElement | null;
+		try {
+			const authorData: StoredAuthor = {};
+			if (nameInput) authorData.name = nameInput.value;
+			if (replyEmailInput) authorData.email = replyEmailInput.value;
+			if (authorData.name !== undefined || authorData.email !== undefined) {
+				setStoredAuthor(localStorage, authKey, authorData);
+			}
+		} catch {}
 		submit.disabled = true;
 		if (!tsGate?.failed) clearStatus(errBox);
 
@@ -2858,6 +2917,15 @@ const buildForm = (
 	const card = buildWritePreview(body, apiBase);
 	form.appendChild(card);
 
+	const apiOrigin = new URL(apiBase).origin;
+	const authKey = authorStorageKey(apiOrigin);
+	let stored: StoredAuthor | null = null;
+	try {
+		stored = getStoredAuthor(localStorage, authKey);
+	} catch {
+		stored = null;
+	}
+
 	if (!signedIn) {
 		const name = el("input");
 		name.className = "gr-name-input";
@@ -2866,6 +2934,22 @@ const buildForm = (
 		name.placeholder = s("w.name_ph");
 		name.setAttribute("aria-label", s("w.name_ph"));
 		name.required = true;
+		if (!name.value && stored?.name) {
+			name.value = stored.name;
+		}
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const saveName = () => {
+			if (timer) clearTimeout(timer);
+			try {
+				setStoredAuthor(localStorage, authKey, { name: name.value });
+			} catch {}
+		};
+		const debounceSaveName = () => {
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(saveName, 300);
+		};
+		name.addEventListener("input", debounceSaveName);
+		name.addEventListener("change", saveName);
 		card.prepend(name);
 	}
 	if (commentEmailConfirmationEnabled) {
@@ -2877,12 +2961,33 @@ const buildForm = (
 		email.className = "gr-comment-confirm-email";
 		email.name = "email";
 		email.type = "email";
-		email.placeholder = s("w.email_ph");
+		email.placeholder = s("w.comment.confirm_email_ph");
 		email.setAttribute("aria-label", s("w.comment.confirm_email_label"));
 		email.autocomplete = "email";
 		email.required = field?.required ?? true;
 		email.value = field?.value ?? "";
-		form.appendChild(email);
+		if (!email.value && stored?.email) {
+			email.value = stored.email;
+		}
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const saveEmail = () => {
+			if (timer) clearTimeout(timer);
+			try {
+				setStoredAuthor(localStorage, authKey, { email: email.value });
+			} catch {}
+		};
+		const debounceSaveEmail = () => {
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(saveEmail, 300);
+		};
+		email.addEventListener("input", debounceSaveEmail);
+		email.addEventListener("change", saveEmail);
+		const nameInput = card.querySelector(".gr-name-input");
+		if (nameInput) {
+			nameInput.after(email);
+		} else {
+			card.prepend(email);
+		}
 	}
 
 	const honey = el("input");
@@ -2932,6 +3037,22 @@ const buildForm = (
 			emailInput.setAttribute("aria-label", s("w.email_label"));
 			emailInput.autocomplete = "email";
 			emailInput.hidden = true;
+			if (!emailInput.value && stored?.email) {
+				emailInput.value = stored.email;
+			}
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const saveNotifyEmail = () => {
+				if (timer) clearTimeout(timer);
+				try {
+					setStoredAuthor(localStorage, authKey, { email: emailInput.value });
+				} catch {}
+			};
+			const debounceSaveNotifyEmail = () => {
+				if (timer) clearTimeout(timer);
+				timer = setTimeout(saveNotifyEmail, 300);
+			};
+			emailInput.addEventListener("input", debounceSaveNotifyEmail);
+			emailInput.addEventListener("change", saveNotifyEmail);
 			notifyCb.addEventListener("change", () => {
 				emailInput.hidden = !notifyCb.checked;
 				emailInput.required = notifyCb.checked;
@@ -4331,6 +4452,24 @@ const submit = async (
 	const name = nameInput?.value ?? "";
 	const body = (form.querySelector(".gr-body-input") as HTMLTextAreaElement).value;
 	const honeypot = (form.querySelector(".gr-honeypot") as HTMLInputElement).value;
+	const confirmEmailInput = form.querySelector(
+		".gr-comment-confirm-email",
+	) as HTMLInputElement | null;
+	const notifyEmailInput = form.querySelector(
+		".gr-email-input",
+	) as HTMLInputElement | null;
+	const notifyCb = form.querySelector(".gr-notify-cb") as HTMLInputElement | null;
+	const authKey = authorStorageKey(apiOrigin);
+	try {
+		const authorData: StoredAuthor = {};
+		if (nameInput && name.trim()) authorData.name = name;
+		const emailEl =
+			confirmEmailInput ?? (notifyCb?.checked ? notifyEmailInput : null);
+		if (emailEl && emailEl.value.trim()) authorData.email = emailEl.value;
+		if (authorData.name !== undefined || authorData.email !== undefined) {
+			setStoredAuthor(localStorage, authKey, authorData);
+		}
+	} catch {}
 
 	try {
 		const formTs = await getFormToken(apiBase);
@@ -4348,9 +4487,6 @@ const submit = async (
 			notice(s("w.ts.interactive"));
 			return;
 		}
-		const confirmEmailInput = form.querySelector(
-			".gr-comment-confirm-email",
-		) as HTMLInputElement | null;
 		const res = await fetch(apiUrl(apiBase, "/api/v1/comments"), {
 			method: "POST",
 			credentials: "include",

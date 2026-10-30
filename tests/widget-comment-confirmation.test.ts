@@ -9,6 +9,7 @@ import {
 
 const REQUIRED_WIDGET_KEYS = [
 	"w.comment.confirm_email_label",
+	"w.comment.confirm_email_ph",
 	"w.comment.confirmation_pending",
 	"w.comment.confirmation_limited",
 	"w.comment.confirmation_failed",
