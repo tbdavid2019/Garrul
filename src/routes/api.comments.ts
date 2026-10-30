@@ -57,7 +57,6 @@ import {
 	type SpamVerdictValue,
 	type TreeComment,
 	type User,
-	type PendingCommentSubmission,
 } from "../db/queries";
 import { allowedPostUrl } from "../lib/cors";
 import { isReservedName, MAX_NAME, nameKey, sanitizeDisplayName } from "../lib/display-name";

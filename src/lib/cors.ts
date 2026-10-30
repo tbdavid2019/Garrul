@@ -149,10 +149,28 @@ const isSelfOriginPost = (
 	path: string,
 	origin: string | undefined,
 	requestUrl: string,
+	referer?: string | undefined,
+	secFetchSite?: string | undefined,
 ): boolean => {
-	if (method !== "POST" || !origin) return false;
+	if (method !== "POST") return false;
 	if (!SELF_ORIGIN_POST_PATHS.some((re) => re.test(path))) return false;
-	return origin === new URL(requestUrl).origin;
+	const expectedOrigin = new URL(requestUrl).origin;
+	if (origin) {
+		return origin === expectedOrigin;
+	}
+	// Same-origin top-level HTML form submissions in browsers often omit the Origin header.
+	// Verify through browser-enforced Sec-Fetch-Site or Referer.
+	if (secFetchSite === "same-origin") {
+		return true;
+	}
+	if (referer) {
+		try {
+			return new URL(referer).origin === expectedOrigin;
+		} catch {
+			return false;
+		}
+	}
+	return false;
 };
 
 // Only when the header is genuinely absent. A POST that *does* carry an Origin
@@ -170,6 +188,8 @@ const isNoOriginPost = (
 export const corsAndCsrf = (): MiddlewareHandler => {
 	return async (c, next) => {
 		const origin = c.req.header("origin");
+		const referer = c.req.header("referer");
+		const secFetchSite = c.req.header("sec-fetch-site");
 		const env = c.env as Record<string, string | undefined>;
 		const allowed = parseAllowed(env.ALLOWED_ORIGINS);
 		const isDev = env.ENV === "dev";
@@ -206,6 +226,8 @@ export const corsAndCsrf = (): MiddlewareHandler => {
 			path,
 			origin,
 			c.req.url,
+			referer,
+			secFetchSite,
 		);
 		const noOriginPost = isNoOriginPost(c.req.method, path, origin);
 		if (

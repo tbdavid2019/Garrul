@@ -69,8 +69,12 @@ export type DicebearStyle = (typeof DICEBEAR_STYLES)[number] | "random";
  * Returns a CDN URL for a DiceBear SVG avatar based on a seed (e.g. user ID).
  * If style is "random" or empty, deterministically selects one of the curated styles.
  */
-export const dicebearAvatarUrl = (seed: string, style = "random"): string => {
-	let resolvedStyle = style.trim();
+export const dicebearAvatarUrl = (seed: string, style = "random"): string | null => {
+	const normalized = style.trim().toLowerCase();
+	if (normalized === "none" || normalized === "off" || normalized === "identicon") {
+		return null;
+	}
+	let resolvedStyle = normalized;
 	if (!resolvedStyle || resolvedStyle === "random") {
 		const hash = fnv1a(seed);
 		resolvedStyle = DICEBEAR_STYLES[hash % DICEBEAR_STYLES.length] ?? "lorelei";

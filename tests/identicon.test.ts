@@ -72,4 +72,17 @@ describe("dicebearAvatarUrl", () => {
 		const url = dicebearAvatarUrl("user@example.com?foo=bar&baz=1", "lorelei");
 		expect(url).toContain("user%40example.com%3Ffoo%3Dbar%26baz%3D1");
 	});
+
+	it("normalizes style names case-insensitively with trimming", () => {
+		const url = dicebearAvatarUrl("user-1", "  Bottts  ");
+		expect(url).toBe("https://api.dicebear.com/9.x/bottts/svg?seed=user-1");
+		const randomUrl = dicebearAvatarUrl("user-1", "RANDOM");
+		expect(randomUrl).toBe(dicebearAvatarUrl("user-1", "random"));
+	});
+
+	it("returns null when style is off, none, or identicon to support pure offline mode", () => {
+		expect(dicebearAvatarUrl("user-1", "off")).toBeNull();
+		expect(dicebearAvatarUrl("user-1", "none")).toBeNull();
+		expect(dicebearAvatarUrl("user-1", "identicon")).toBeNull();
+	});
 });

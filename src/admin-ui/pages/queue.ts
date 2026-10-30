@@ -3,7 +3,7 @@ import type {
 	AuditRowWithAdmin,
 	CommentStatus,
 } from "../../db/queries";
-import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl } from "../../lib/identicon";
 import { sanitizeForEmail as resanitizeBodyHtml } from "../../lib/markdown";
 import { renderHostFilter } from "../components/host-filter";
 import { replyComposer } from "../components/reply-composer";
@@ -124,7 +124,9 @@ const authorCell = (c: AdminComment, noteCount: number): string => {
 	const name = c.author_name ?? "(deleted user)";
 	const provider = c.author_provider ?? "anon";
 	const avatarUrl = c.author_avatar_url || dicebearAvatarUrl(c.user_id);
-	const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="28" height="28">`;
+	const avatar = avatarUrl
+		? `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="28" height="28" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+		: `<span class="author-avatar" style="width:28px;height:28px"></span>`;
 	const badges: string[] = [];
 	if (c.author_is_admin) badges.push('<span class="pill admin">admin</span>');
 	if (c.author_is_banned) badges.push('<span class="pill banned">banned</span>');

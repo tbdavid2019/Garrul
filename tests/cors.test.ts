@@ -491,6 +491,31 @@ describe("corsAndCsrf — Origin allowlist on /api/*", () => {
 			expect(res.status).toBe(200);
 		});
 
+		it("confirmation form POST with sec-fetch-site: same-origin passes", async () => {
+			const app = mkApp();
+			const res = await app.request(
+				`/api/v1/comments/confirm/${"a".repeat(64)}`,
+				{ method: "POST", headers: { "sec-fetch-site": "same-origin" } },
+				env,
+			);
+			expect(res.status).toBe(200);
+		});
+
+		it("confirmation form POST with referer matching Worker origin passes", async () => {
+			const app = mkApp();
+			const res = await app.request(
+				`/api/v1/comments/confirm/${"a".repeat(64)}`,
+				{
+					method: "POST",
+					headers: {
+						referer: `${SELF}/api/v1/comments/confirm/${"a".repeat(64)}`,
+					},
+				},
+				env,
+			);
+			expect(res.status).toBe(200);
+		});
+
 		it("an unrelated no-Origin POST is still rejected", async () => {
 			const res = await call("/api/v1/comments", "POST");
 			expect(res.status).toBe(403);

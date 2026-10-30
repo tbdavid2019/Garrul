@@ -9,7 +9,7 @@ import type {
 } from "../../db/queries";
 import { spamSummary } from "../components/spam-summary";
 import type { ResolvedFlags, ResolvedNumbers } from "../../lib/settings";
-import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl } from "../../lib/identicon";
 import { barChartSvg } from "../charts";
 import { escapeHtml } from "../escape";
 
@@ -53,7 +53,9 @@ const topCommentersList = (commenters: TopCommenter[]): string => {
 	return commenters
 		.map((u) => {
 			const avatarUrl = u.avatar_url || dicebearAvatarUrl(u.user_id);
-			const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="20" height="20">`;
+			const avatar = avatarUrl
+				? `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="20" height="20" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+				: `<span class="author-avatar" style="width:20px;height:20px"></span>`;
 			return `<li><a href="/admin/users/${escapeHtml(u.user_id)}" style="display:inline-flex;gap:0.4rem;align-items:center">${avatar}${escapeHtml(u.name)}</a> <span class="muted">· ${u.count}</span></li>`;
 		})
 		.join("");

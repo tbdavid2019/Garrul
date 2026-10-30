@@ -687,7 +687,6 @@ const buildAvatar = (a: TreeAuthor): HTMLElement => {
 	const wrap = el("div", "gr-avatar");
 	if (a.avatar_url) {
 		const img = el("img");
-		img.setAttribute("src", a.avatar_url);
 		img.setAttribute("alt", "");
 		// The 40px wrapper already reserves the box, so these buy no layout
 		// stability — they buy the network. A long thread is a long thread of
@@ -710,6 +709,7 @@ const buildAvatar = (a: TreeAuthor): HTMLElement => {
 				{ once: true },
 			);
 		}
+		img.setAttribute("src", a.avatar_url);
 		wrap.appendChild(img);
 	} else if (a.avatar_svg) {
 		wrap.appendChild(parseTrustedHtml(a.avatar_svg));
