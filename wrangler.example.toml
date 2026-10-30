@@ -97,6 +97,8 @@ OAUTH_CALLBACK_BASE = "https://comments.example.com"
 # Optional. Set "1"/"true" to hide the "Comments by Garrul" line under the
 # comment list. Unset = attribution shown.
 # BRANDING_HIDDEN = "false"
+# Optional. Default avatar style for users without an avatar: "random" or DiceBear style name.
+# AVATAR_STYLE = "random"
 # Feature flags. These are env-var DEFAULTS — an operator can override any of
 # them at runtime from the admin Settings page (a DB row wins over the env
 # var). Set "0"/"false" to disable. Comment-level features default ON; the

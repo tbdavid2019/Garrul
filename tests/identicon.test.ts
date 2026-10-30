@@ -5,7 +5,7 @@
  *   - symmetric on the vertical axis (the user-visible point of the design)
  */
 import { describe, it, expect } from "vitest";
-import { identiconSvg } from "../src/lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../src/lib/identicon";
 
 describe("identiconSvg", () => {
 	it("is deterministic for the same seed", () => {
@@ -46,5 +46,30 @@ describe("identiconSvg", () => {
 		expect(svg).toContain('aria-hidden="true"');
 		expect(svg).not.toMatch(/role="img"/);
 		expect(svg).not.toMatch(/aria-label/);
+	});
+});
+
+describe("dicebearAvatarUrl", () => {
+	it("is deterministic for the same seed and style", () => {
+		expect(dicebearAvatarUrl("user-1", "lorelei")).toBe(
+			dicebearAvatarUrl("user-1", "lorelei"),
+		);
+		expect(dicebearAvatarUrl("user-1")).toBe(dicebearAvatarUrl("user-1"));
+	});
+
+	it("differs across different seeds", () => {
+		const u1 = dicebearAvatarUrl("user-1");
+		const u2 = dicebearAvatarUrl("user-2");
+		expect(u1).not.toBe(u2);
+	});
+
+	it("respects explicitly requested styles", () => {
+		const url = dicebearAvatarUrl("user-1", "bottts");
+		expect(url).toBe("https://api.dicebear.com/9.x/bottts/svg?seed=user-1");
+	});
+
+	it("encodes special characters in seed safely", () => {
+		const url = dicebearAvatarUrl("user@example.com?foo=bar&baz=1", "lorelei");
+		expect(url).toContain("user%40example.com%3Ffoo%3Dbar%26baz%3D1");
 	});
 });

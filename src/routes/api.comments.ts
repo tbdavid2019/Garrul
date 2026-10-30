@@ -61,7 +61,7 @@ import {
 } from "../db/queries";
 import { allowedPostUrl } from "../lib/cors";
 import { isReservedName, MAX_NAME, nameKey, sanitizeDisplayName } from "../lib/display-name";
-import { identiconSvg } from "../lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../lib/identicon";
 import { fillSubject, sanitizePostTitle, subjectTitle } from "../lib/post-title";
 import { clientIp, requireIpHash } from "../lib/ip-hash";
 import { CURRENT_RENDERER_VERSION, renderMarkdown, validateBody } from "../lib/markdown";
@@ -231,8 +231,9 @@ const validName = (raw: string | undefined): { ok: true; name: string } | { ok: 
 	return { ok: true, name };
 };
 
-const serializeComment = (c: Comment, author: User) => {
+const serializeComment = (c: Comment, author: User, avatarStyle?: string) => {
 	const isDeleted = c.status === "deleted";
+	const style = avatarStyle || "random";
 	return {
 		id: c.id,
 		post_slug: c.post_slug,
@@ -252,7 +253,7 @@ const serializeComment = (c: Comment, author: User) => {
 			name: author.name,
 			provider: author.provider,
 			avatar_svg: author.avatar_url ? null : identiconSvg(author.id),
-			avatar_url: author.avatar_url,
+			avatar_url: author.avatar_url || dicebearAvatarUrl(author.id, style),
 		},
 	};
 };
@@ -974,7 +975,7 @@ comments.post("/", async (c) => {
 		else await notify;
 	}
 
-	return c.json({ comment: serializeComment(inserted, author) }, 201);
+	return c.json({ comment: serializeComment(inserted, author, c.env.AVATAR_STYLE) }, 201);
 });
 
 const COMMENT_CONFIRMATION_TOKEN_RE = /^[0-9a-f]{64}$/;
@@ -1200,10 +1201,12 @@ const AUTHOR_BATCH = 90;
 const loadAuthors = async (
 	db: D1Database,
 	rows: TreeComment[],
+	avatarStyle?: string,
 ): Promise<Map<string, TreeAuthor>> => {
 	if (rows.length === 0) return new Map();
 	const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
 	const out = new Map<string, TreeAuthor>();
+	const style = avatarStyle || "random";
 	for (let i = 0; i < userIds.length; i += AUTHOR_BATCH) {
 		const batch = userIds.slice(i, i + AUTHOR_BATCH);
 		const placeholders = batch.map(() => "?").join(",");
@@ -1227,7 +1230,7 @@ const loadAuthors = async (
 				id: user.id,
 				name: user.name,
 				provider: user.provider,
-				avatar_url: user.avatar_url,
+				avatar_url: user.avatar_url || dicebearAvatarUrl(user.id, style),
 				avatar_svg: user.avatar_url ? null : identiconSvg(user.id),
 			});
 		}
@@ -1528,7 +1531,7 @@ export const buildTreePage = async (
 			scan_limit: TREE_SCAN_LIMIT,
 		});
 	}
-	const authors = await loadAuthors(env.DB, rows);
+	const authors = await loadAuthors(env.DB, rows, env.AVATAR_STYLE);
 
 	// Engagement is loaded for the comments on this page only. `rows` is every
 	// comment listCommentsForThreads returned for the page's threads (top-level
@@ -1822,7 +1825,7 @@ comments.patch("/:id", async (c) => {
 	});
 	const updated = await getComment(c.env.DB, id);
 	if (!updated) return c.json({ error: t("err.internal") }, 500);
-	return c.json({ comment: serializeComment(updated, author) });
+	return c.json({ comment: serializeComment(updated, author, c.env.AVATAR_STYLE) });
 });
 
 comments.delete("/:id", async (c) => {

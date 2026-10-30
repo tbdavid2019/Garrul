@@ -253,6 +253,17 @@ export const CONFIG_REGISTRY: ConfigEntry[] = [
 		example: "false",
 		addedIn: "1.0.0",
 	},
+	{
+		name: "AVATAR_STYLE",
+		kind: "var",
+		required: false,
+		group: "Core",
+		hint: 'default avatar style for users without an avatar: "random" or DiceBear style name',
+		description:
+			'Optional. Avatar style for users without an avatar. "random" picks deterministically from curated DiceBear styles (lorelei, adventurer, bottts, notionists, micah, avataaars, thumbs); or specify a DiceBear style name.',
+		example: "random",
+		addedIn: "2.40.0",
+	},
 
 	// ------------------------------------------------- generated secrets
 	{

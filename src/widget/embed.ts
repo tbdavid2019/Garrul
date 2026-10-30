@@ -701,6 +701,15 @@ const buildAvatar = (a: TreeAuthor): HTMLElement => {
 		// Provider CDNs get no referrer: which post someone is reading is not
 		// GitHub's or Google's business.
 		img.setAttribute("referrerpolicy", "no-referrer");
+		if (a.avatar_svg) {
+			img.addEventListener(
+				"error",
+				() => {
+					wrap.replaceChildren(parseTrustedHtml(a.avatar_svg!));
+				},
+				{ once: true },
+			);
+		}
 		wrap.appendChild(img);
 	} else if (a.avatar_svg) {
 		wrap.appendChild(parseTrustedHtml(a.avatar_svg));

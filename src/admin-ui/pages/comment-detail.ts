@@ -6,7 +6,7 @@ import type {
 	Report,
 	SpamVerdictRow,
 } from "../../db/queries";
-import { identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
 import { sanitizeForEmail as resanitizeBodyHtml } from "../../lib/markdown";
 import { moderatorNotes } from "../components/moderator-notes";
 import {
@@ -21,9 +21,8 @@ const formatTs = (ts: number): string =>
 
 const authorBlock = (c: AdminComment): string => {
 	const name = c.author_name ?? "(deleted user)";
-	const avatar = c.author_avatar_url
-		? `<img class="author-avatar" src="${escapeHtml(c.author_avatar_url)}" alt="" width="40" height="40">`
-		: `<span class="author-avatar" style="width:40px;height:40px">${identiconSvg(c.user_id, 40)}</span>`;
+	const avatarUrl = c.author_avatar_url || dicebearAvatarUrl(c.user_id);
+	const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="40" height="40">`;
 	const badges: string[] = [];
 	if (c.author_is_admin) badges.push('<span class="pill admin">admin</span>');
 	if (c.author_is_banned) badges.push('<span class="pill banned">banned</span>');

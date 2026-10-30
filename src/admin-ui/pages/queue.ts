@@ -3,7 +3,7 @@ import type {
 	AuditRowWithAdmin,
 	CommentStatus,
 } from "../../db/queries";
-import { identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
 import { sanitizeForEmail as resanitizeBodyHtml } from "../../lib/markdown";
 import { renderHostFilter } from "../components/host-filter";
 import { replyComposer } from "../components/reply-composer";
@@ -123,9 +123,8 @@ const queryString = (f: QueueFilters): string => {
 const authorCell = (c: AdminComment, noteCount: number): string => {
 	const name = c.author_name ?? "(deleted user)";
 	const provider = c.author_provider ?? "anon";
-	const avatar = c.author_avatar_url
-		? `<img class="author-avatar" src="${escapeHtml(c.author_avatar_url)}" alt="" width="28" height="28">`
-		: `<span class="author-avatar">${identiconSvg(c.user_id, 28)}</span>`;
+	const avatarUrl = c.author_avatar_url || dicebearAvatarUrl(c.user_id);
+	const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="28" height="28">`;
 	const badges: string[] = [];
 	if (c.author_is_admin) badges.push('<span class="pill admin">admin</span>');
 	if (c.author_is_banned) badges.push('<span class="pill banned">banned</span>');

@@ -177,6 +177,11 @@
       "addedIn": "1.0.0"
     },
     {
+      "name": "AVATAR_STYLE",
+      "required": false,
+      "addedIn": "2.40.0"
+    },
+    {
       "name": "TURNSTILE_ALWAYS",
       "required": false,
       "addedIn": "2.13.0"

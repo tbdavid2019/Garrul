@@ -49,3 +49,31 @@ export const identiconSvg = (seed: string, size = 48): string => {
 
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><rect width="${size}" height="${size}" fill="${bg}"/>${rects.join("")}</svg>`;
 };
+
+/**
+ * Curated list of popular, high-aesthetic DiceBear collections.
+ */
+export const DICEBEAR_STYLES = [
+	"lorelei",
+	"adventurer",
+	"bottts",
+	"notionists",
+	"micah",
+	"avataaars",
+	"thumbs",
+] as const;
+
+export type DicebearStyle = (typeof DICEBEAR_STYLES)[number] | "random";
+
+/**
+ * Returns a CDN URL for a DiceBear SVG avatar based on a seed (e.g. user ID).
+ * If style is "random" or empty, deterministically selects one of the curated styles.
+ */
+export const dicebearAvatarUrl = (seed: string, style = "random"): string => {
+	let resolvedStyle = style.trim();
+	if (!resolvedStyle || resolvedStyle === "random") {
+		const hash = fnv1a(seed);
+		resolvedStyle = DICEBEAR_STYLES[hash % DICEBEAR_STYLES.length] ?? "lorelei";
+	}
+	return `https://api.dicebear.com/9.x/${encodeURIComponent(resolvedStyle)}/svg?seed=${encodeURIComponent(seed)}`;
+};

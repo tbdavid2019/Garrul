@@ -6,7 +6,7 @@ import type {
 	User,
 	UserRole,
 } from "../../db/queries";
-import { identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
 import { sanitizeForEmail as resanitizeBodyHtml } from "../../lib/markdown";
 import { moderatorNotes } from "../components/moderator-notes";
 import { escapeHtml, jsLiteral } from "../escape";
@@ -22,9 +22,8 @@ const rolePill = (role: UserRole): string => {
 
 const userHeader = (d: AdminUserDetail, viewer: User): string => {
 	const u = d.user;
-	const avatar = u.avatar_url
-		? `<img class="author-avatar" src="${escapeHtml(u.avatar_url)}" alt="" width="64" height="64">`
-		: `<span class="author-avatar" style="width:64px;height:64px">${identiconSvg(u.id, 64)}</span>`;
+	const avatarUrl = u.avatar_url || dicebearAvatarUrl(u.id);
+	const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="64" height="64">`;
 	const badges: string[] = [];
 	const pill = rolePill(u.role);
 	if (pill) badges.push(pill);

@@ -9,7 +9,7 @@ import type {
 } from "../../db/queries";
 import { spamSummary } from "../components/spam-summary";
 import type { ResolvedFlags, ResolvedNumbers } from "../../lib/settings";
-import { identiconSvg } from "../../lib/identicon";
+import { dicebearAvatarUrl, identiconSvg } from "../../lib/identicon";
 import { barChartSvg } from "../charts";
 import { escapeHtml } from "../escape";
 
@@ -52,9 +52,8 @@ const topCommentersList = (commenters: TopCommenter[]): string => {
 		return '<li class="muted">No approved comments yet.</li>';
 	return commenters
 		.map((u) => {
-			const avatar = u.avatar_url
-				? `<img class="author-avatar" src="${escapeHtml(u.avatar_url)}" alt="" width="20" height="20">`
-				: `<span class="author-avatar" style="width:20px;height:20px">${identiconSvg(u.user_id, 20)}</span>`;
+			const avatarUrl = u.avatar_url || dicebearAvatarUrl(u.user_id);
+			const avatar = `<img class="author-avatar" src="${escapeHtml(avatarUrl)}" alt="" width="20" height="20">`;
 			return `<li><a href="/admin/users/${escapeHtml(u.user_id)}" style="display:inline-flex;gap:0.4rem;align-items:center">${avatar}${escapeHtml(u.name)}</a> <span class="muted">· ${u.count}</span></li>`;
 		})
 		.join("");
