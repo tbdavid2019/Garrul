@@ -140,6 +140,7 @@ describe("loadFlags — defaults", () => {
 			spam_first_comment_moderate: false,
 			moderator_email_enabled: false,
 			turnstile_always: false,
+			turnstile_enabled: true,
 			comment_email_confirmation_enabled: false,
 			oauth_login_enabled: false,
 		});

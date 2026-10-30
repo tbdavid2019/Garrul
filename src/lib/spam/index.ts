@@ -12,6 +12,7 @@
 
 import { log } from "../log";
 import { checkAkismet } from "./akismet";
+import { checkDecision } from "./decision";
 import { checkWorkersAi } from "./workers-ai";
 
 export type SpamCheckInput = {
@@ -38,6 +39,10 @@ export type SpamEnv = {
 	AKISMET_API_KEY?: string;
 	AKISMET_SITE_URL?: string;
 	AI?: Ai;
+	OPENAI_API_KEY?: string;
+	OPENAI_DECISION_MODEL?: string;
+	CLEF_PRIMARY_URL?: string;
+	CLEF_FALLBACK_URL?: string;
 };
 
 export const checkSpam = async (
@@ -59,6 +64,18 @@ export const checkSpam = async (
 		if (!env.AI) return null;
 		return checkWorkersAi(
 			{ ai: env.AI, threshold: aiThreshold },
+			input,
+		);
+	}
+	if (provider === "decision" || provider === "clef") {
+		return checkDecision(
+			{
+				primaryUrl: env.CLEF_PRIMARY_URL,
+				fallbackUrl: env.CLEF_FALLBACK_URL,
+				openaiApiKey: env.OPENAI_API_KEY,
+				openaiModel: env.OPENAI_DECISION_MODEL,
+				threshold: aiThreshold,
+			},
 			input,
 		);
 	}

@@ -134,6 +134,8 @@ OAUTH_CALLBACK_BASE = "https://comments.example.com"
 # unless TURNSTILE_SITE_KEY/TURNSTILE_SECRET are set. Also editable at
 # runtime from the admin Settings page:
 # TURNSTILE_ALWAYS = "false"
+# Master switch for Turnstile. When false, Turnstile is disabled (defaults true):
+# TURNSTILE_ENABLED = "true"
 # Display & pagination (all optional; clamped server-side). Also editable at
 # runtime from the admin Settings page. Top-level comments per initial load /
 # "Load older" click (default 25, range 1-200 — set 100 for pre-v1.10 behavior):
@@ -190,9 +192,15 @@ OAUTH_CALLBACK_BASE = "https://comments.example.com"
 # TELEGRAM_BOT_USERNAME = "YourGarrulBot"
 
 # Anti-spam (all optional; OFF by default). See docs/ANTISPAM.md.
-# Pluggable content classifier — "akismet" or "workers-ai". Leave unset for none.
+# Pluggable content classifier — "akismet", "workers-ai", or "decision". Leave unset for none.
 # SPAM_PROVIDER = "akismet"
 # SPAM_PROVIDER = "workers-ai"
+# SPAM_PROVIDER = "decision"
+#
+# Decision model classifier endpoints & models:
+# CLEF_PRIMARY_URL = "https://clef.create360.ai/v1/systemone"
+# CLEF_FALLBACK_URL = "https://clef.aiurl.tw/v1/systemone"
+# OPENAI_DECISION_MODEL = "gpt-6-luna"
 #
 # Lightweight in-core heuristics. Unset = off. Tripped signals flag the
 # comment to status='pending' (admin queue) — never a silent drop.
@@ -279,6 +287,7 @@ crons = ["*/15 * * * *"]
 #   WEBHOOK_URL — legacy single-URL webhook; prefer /admin/webhooks endpoints
 #   TELEGRAM_BOT_TOKEN — BotFather token; see docs/telegram.md
 #   TELEGRAM_WEBHOOK_SECRET — shared secret for setWebhook; required for inbound commands
+#   OPENAI_API_KEY — OpenAI API key for Decision model fallback tier
 #   AKISMET_API_KEY — required when SPAM_PROVIDER = "akismet"
 #   AKISMET_SITE_URL — public site URL registered with Akismet
 #   SPAM_FORM_TS_SECRET — HMAC key for signed form-timestamp tokens

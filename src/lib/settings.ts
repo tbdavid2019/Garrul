@@ -38,6 +38,7 @@ export type FlagKey =
 	| "spam_first_comment_moderate"
 	| "moderator_email_enabled"
 	| "turnstile_always"
+	| "turnstile_enabled"
 	| "comment_email_confirmation_enabled"
 	| "oauth_login_enabled";
 
@@ -132,6 +133,10 @@ const FLAGS: Record<FlagKey, { env: keyof Bindings; default: boolean }> = {
 	turnstile_always: {
 		env: "TURNSTILE_ALWAYS",
 		default: false,
+	},
+	turnstile_enabled: {
+		env: "TURNSTILE_ENABLED",
+		default: true,
 	},
 	// Email confirmation is opt-in so existing commenters keep the current flow.
 	comment_email_confirmation_enabled: {

@@ -60,7 +60,7 @@ import {
 	reactionKinds,
 	type ResolvedSettings,
 } from "../lib/settings";
-import { turnstileAlwaysOn } from "../lib/turnstile";
+import { isTurnstileConfigured, turnstileAlwaysOn } from "../lib/turnstile";
 import { FALLBACK_LOCALE, LOCALES } from "../i18n";
 import { resolveLocale } from "../i18n/negotiate";
 import { WIDGET_TABLES } from "../i18n/widget";
@@ -134,17 +134,23 @@ export const buildConfigPayload = (
 	return {
 		locale,
 		...localized,
-		turnstile_site_key: env.TURNSTILE_SITE_KEY || null,
+		turnstile_site_key:
+			flags.turnstile_enabled &&
+			isTurnstileConfigured(env.TURNSTILE_SITE_KEY, env.TURNSTILE_SECRET)
+				? env.TURNSTILE_SITE_KEY
+				: null,
 		// Already folded together with both Turnstile credentials
 		// (turnstileAlwaysOn), so the widget never has to re-derive "is a
 		// challenge possible here" — an install with the flag on but no key or
 		// no secret reports false, exactly matching what the POST handler will
 		// enforce.
-		turnstile_always: turnstileAlwaysOn(
-			flags.turnstile_always,
-			env.TURNSTILE_SITE_KEY,
-			env.TURNSTILE_SECRET,
-		),
+		turnstile_always:
+			flags.turnstile_enabled &&
+			turnstileAlwaysOn(
+				flags.turnstile_always,
+				env.TURNSTILE_SITE_KEY,
+				env.TURNSTILE_SECRET,
+			),
 		edit_window_minutes: numbers.edit_window_minutes,
 		providers,
 		oauth_login_enabled: flags.oauth_login_enabled,

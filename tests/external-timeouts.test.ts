@@ -54,4 +54,16 @@ describe("external call timeouts", () => {
 		await vi.advanceTimersByTimeAsync(5_000);
 		await expect(v).resolves.toBeNull();
 	});
+
+	it("a Decision model call that times out fails open as no opinion", async () => {
+		const fetch = vi.fn(async (_url: string, _init?: RequestInit) => {
+			throw new DOMException("timed out", "TimeoutError");
+		});
+		vi.stubGlobal("fetch", fetch);
+		const env = {
+			SPAM_PROVIDER: "decision",
+		};
+		await expect(checkSpam(env, input)).resolves.toBeNull();
+		expect(fetch.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+	});
 });

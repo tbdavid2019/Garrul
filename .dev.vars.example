@@ -74,6 +74,8 @@ TELEGRAM_BOT_TOKEN=""
 TELEGRAM_WEBHOOK_SECRET=""
 
 # --- Anti-spam ---
+# OpenAI API key for Decision model fallback tier
+OPENAI_API_KEY=""
 # required when SPAM_PROVIDER = "akismet"
 AKISMET_API_KEY=""
 # public site URL registered with Akismet

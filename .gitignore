@@ -14,6 +14,7 @@ src/lib/version.gen.ts
 
 # Upgrade audit log (operator-local)
 .garrul-upgrade-log.json
+.agents/
 
 # Wrangler / Cloudflare local state
 .wrangler/

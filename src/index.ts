@@ -59,6 +59,8 @@ export type Bindings = {
 	// through the settings layer (DB override > env > default false), so the
 	// admin Settings page can flip it without a redeploy.
 	TURNSTILE_ALWAYS: string;
+	// Master toggle for Turnstile. When false, Turnstile is disabled.
+	TURNSTILE_ENABLED?: string;
 	// Opt-in per-comment inbox confirmation and reversible pause for new OAuth
 	// sign-ins. Runtime settings can override these environment defaults.
 	COMMENT_EMAIL_CONFIRMATION_ENABLED?: string;
@@ -105,6 +107,10 @@ export type Bindings = {
 	AKISMET_API_KEY?: string;
 	AKISMET_SITE_URL?: string;
 	AI?: Ai;
+	OPENAI_API_KEY?: string;
+	OPENAI_DECISION_MODEL?: string;
+	CLEF_PRIMARY_URL?: string;
+	CLEF_FALLBACK_URL?: string;
 	SPAM_LINK_THRESHOLD?: string;
 	SPAM_AI_THRESHOLD?: string;
 	SPAM_HONEYPOT_MIN_MS?: string;

@@ -28,6 +28,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { comments } from "../src/routes/api.comments";
 import { config } from "../src/routes/api.config";
+import { bustSettingsCache } from "../src/lib/settings";
 import { installMockCaches, uninstallMockCaches } from "./helpers/mock-caches";
 import type { Bindings } from "../src/index";
 
@@ -284,6 +285,24 @@ describe("GET /config — turnstile_always", () => {
 			).turnstile_always,
 		).toBe(false);
 	});
+
+	it("sets turnstile_site_key to null and turnstile_always to false when TURNSTILE_ENABLED is 'false'", async () => {
+		const envForDisabled = makeEnv({
+			TURNSTILE_ENABLED: "false",
+			TURNSTILE_ALWAYS: "true",
+			TURNSTILE_SITE_KEY: "0x4AAAAAA",
+			TURNSTILE_SECRET: "0x4AAAAAA",
+		});
+		bustSettingsCache(envForDisabled);
+		const cfg = await getConfig({
+			TURNSTILE_ENABLED: "false",
+			TURNSTILE_ALWAYS: "true",
+			TURNSTILE_SITE_KEY: "0x4AAAAAA",
+			TURNSTILE_SECRET: "0x4AAAAAA",
+		});
+		expect(cfg.turnstile_site_key).toBeNull();
+		expect(cfg.turnstile_always).toBe(false);
+	});
 });
 
 describe("POST /comments — anonymous authors", () => {
@@ -320,6 +339,40 @@ describe("POST /comments — anonymous authors", () => {
 		const second = await postAnon({ turnstile_token: "solved" });
 		expect(second.status).toBe(429);
 		expect(siteverify).toHaveBeenCalledOnce();
+	});
+
+	it("accepts anonymous comment with no token when turnstile is disabled or unconfigured", async () => {
+		const postAnonUnconfigured = (body: Record<string, unknown>) =>
+			new Hono<{ Bindings: Bindings }>().route("/", comments).request(
+				"/",
+				{
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ slug: "unconf", body: "hello no token", name: "Guest", ...body }),
+				},
+				makeEnv({ TURNSTILE_SITE_KEY: "", TURNSTILE_SECRET: "" }) as unknown as Record<string, unknown>,
+				execCtx,
+			);
+		const res = await postAnonUnconfigured({});
+		expect(res.status).toBe(201);
+
+		const envForDisabled = makeEnv({ TURNSTILE_ENABLED: "false" });
+		const postAnonDisabled = (body: Record<string, unknown>) =>
+			new Hono<{ Bindings: Bindings }>().route("/", comments).request(
+				"/",
+				{
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ slug: "disabled", body: "hello disabled", name: "Guest", ...body }),
+				},
+				envForDisabled as unknown as Record<string, unknown>,
+				execCtx,
+			);
+		bustSettingsCache(envForDisabled);
+		uninstallMockCaches();
+		installMockCaches();
+		const res2 = await postAnonDisabled({});
+		expect(res2.status).toBe(201);
 	});
 
 	it("refuses a rejected token and a banned ghost without writing a comment", async () => {

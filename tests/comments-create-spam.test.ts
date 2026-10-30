@@ -6,7 +6,7 @@
  * and the cheap rejections (honeypot, oversized body) that must refuse before
  * any row is written.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Hono } from "hono";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -120,6 +120,30 @@ describe("POST /comments — anti-spam on create", () => {
 		expect(res.status).toBe(201);
 		expect(stored().map((c) => c.status)).toEqual(["pending"]);
 		expect(verdicts().map((v) => [v.source, v.verdict])).toEqual([["workers-ai", "spam"]]);
+	});
+
+	it("records verdict with source='decision' when SPAM_PROVIDER='decision'", async () => {
+		const originalFetch = globalThis.fetch;
+		globalThis.fetch = vi.fn(async () => {
+			return new Response(
+				JSON.stringify({
+					model: "clef-flash",
+					answers: { spam: { type: "noul", noul: 0.95 } },
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		}) as typeof fetch;
+		try {
+			const res = await post(
+				{ body: "buy cheap rolex now" },
+				{ SPAM_PROVIDER: "decision" },
+			);
+			expect(res.status).toBe(201);
+			expect(stored().map((c) => c.status)).toEqual(["pending"]);
+			expect(verdicts().map((v) => [v.source, v.verdict])).toEqual([["decision", "spam"]]);
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
 	});
 
 	it("publishes a comment the classifier calls ham", async () => {

@@ -40,6 +40,25 @@ describe("checkSpam dispatcher", () => {
 	it("returns null for workers-ai when AI binding is missing", async () => {
 		expect(await checkSpam({ SPAM_PROVIDER: "workers-ai" }, input)).toBeNull();
 	});
+
+	it("dispatches to decision model when SPAM_PROVIDER is 'decision'", async () => {
+		const originalFetch = globalThis.fetch;
+		globalThis.fetch = vi.fn(async () => {
+			return new Response(
+				JSON.stringify({
+					model: "clef-flash",
+					answers: { spam: { type: "noul", noul: 0.01 } },
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		}) as typeof fetch;
+		try {
+			const res = await checkSpam({ SPAM_PROVIDER: "decision" }, input);
+			expect(res).toMatchObject({ spam: false, score: 0.01 });
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
 });
 
 describe("akismet provider", () => {

@@ -60,7 +60,13 @@ export const turnstileAlwaysOn = (
 	flag: boolean,
 	siteKey: string | undefined,
 	secret: string | undefined,
-): boolean => flag && !!siteKey && !!secret;
+): boolean => flag && isTurnstileConfigured(siteKey, secret);
+
+export const isTurnstileConfigured = (
+	siteKey: string | undefined,
+	secret: string | undefined,
+): boolean => Boolean(siteKey && secret && siteKey.trim() !== "" && secret.trim() !== "");
+
 
 type SiteverifyResponse = {
 	success: boolean;

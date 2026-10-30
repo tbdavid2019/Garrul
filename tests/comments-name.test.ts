@@ -86,6 +86,8 @@ beforeEach(() => {
 		ANALYTICS: { writeDataPoint() {} },
 		ENV: "dev",
 		IP_HASH_SECRET: "test-secret",
+		TURNSTILE_SITE_KEY: "test-site-key",
+		TURNSTILE_SECRET: "test-secret",
 	} as unknown as Bindings;
 });
 afterEach(() => uninstallMockCaches());

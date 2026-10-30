@@ -17,6 +17,8 @@ export const spamSummary = (
 	const provider =
 		env.SPAM_PROVIDER === "workers-ai"
 			? `workers-ai(≥${numbers.spam_ai_threshold}%)`
+			: env.SPAM_PROVIDER === "decision" || env.SPAM_PROVIDER === "clef"
+			? `decision(≥${numbers.spam_ai_threshold}%)`
 			: env.SPAM_PROVIDER || "off";
 	const heuristics: string[] = [];
 	const minMs = numbers.spam_honeypot_min_ms;

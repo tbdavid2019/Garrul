@@ -321,6 +321,17 @@ export const CONFIG_REGISTRY: ConfigEntry[] = [
 		example: "false",
 		addedIn: "2.13.0",
 	},
+	{
+		name: "TURNSTILE_ENABLED",
+		kind: "var",
+		required: false,
+		group: "Turnstile",
+		hint: "enable or disable Turnstile anti-spam challenge; defaults true",
+		description:
+			"Enable or disable the Turnstile challenge entirely. When set to 'false', anonymous comments do not require a Turnstile token.",
+		example: "true",
+		addedIn: "2.40.1",
+	},
 
 	// --------------------------------------------------------------- oauth
 	{
@@ -556,11 +567,55 @@ export const CONFIG_REGISTRY: ConfigEntry[] = [
 		kind: "var",
 		required: false,
 		group: "Anti-spam",
-		hint: '"akismet" or "workers-ai"; unset for none',
+		hint: '"akismet", "workers-ai", or "decision"; unset for none',
 		description:
-			'Optional. Pluggable content classifier — `akismet` or `workers-ai`. Unset = no classifier. `workers-ai` also needs an `[ai]` binding. See `docs/ANTISPAM.md`.',
-		example: "akismet",
+			'Optional. Pluggable content classifier — `akismet`, `workers-ai`, or `decision`. Unset = no classifier. `workers-ai` needs an `[ai]` binding. `decision` connects Clef-Flash and OpenAI Decisions API tiers. See `docs/ANTISPAM.md`.',
+		example: "decision",
 		addedIn: "1.1.1",
+	},
+	{
+		name: "CLEF_PRIMARY_URL",
+		kind: "var",
+		required: false,
+		group: "Anti-spam",
+		hint: "URL for primary Clef-Flash decision model",
+		description:
+			"Optional. Primary Clef-Flash SystemOne endpoint URL for Decision model spam classifier. Defaults to `https://clef.create360.ai/v1/systemone`.",
+		example: "https://clef.create360.ai/v1/systemone",
+		addedIn: "2.40.1",
+	},
+	{
+		name: "CLEF_FALLBACK_URL",
+		kind: "var",
+		required: false,
+		group: "Anti-spam",
+		hint: "URL for fallback Clef-Flash decision model",
+		description:
+			"Optional. Fallback Clef-Flash SystemOne endpoint URL for Decision model spam classifier. Defaults to `https://clef.aiurl.tw/v1/systemone`.",
+		example: "https://clef.aiurl.tw/v1/systemone",
+		addedIn: "2.40.1",
+	},
+	{
+		name: "OPENAI_API_KEY",
+		kind: "secret",
+		required: false,
+		group: "Anti-spam",
+		hint: 'OpenAI API key for Decision model fallback tier',
+		description:
+			"Optional. OpenAI API key. Required when using OpenAI Decisions API as a fallback tier in Decision model spam classifier.",
+		example: "sk-...",
+		addedIn: "2.40.1",
+	},
+	{
+		name: "OPENAI_DECISION_MODEL",
+		kind: "var",
+		required: false,
+		group: "Anti-spam",
+		hint: 'model name for OpenAI Decisions API (default: gpt-6-luna)',
+		description:
+			"Optional. Model name for OpenAI Decisions API. Defaults to `gpt-6-luna`.",
+		example: "gpt-6-luna",
+		addedIn: "2.40.1",
 	},
 	{
 		name: "AKISMET_API_KEY",

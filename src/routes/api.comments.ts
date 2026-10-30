@@ -68,7 +68,7 @@ import { CURRENT_RENDERER_VERSION, renderMarkdown, validateBody } from "../lib/m
 import { checkRateLimit } from "../lib/ratelimit";
 import { isActiveUser, requireActiveUser } from "../lib/active-user";
 import { readSession } from "../lib/session";
-import { turnstileAlwaysOn, verifyTurnstile } from "../lib/turnstile";
+import { isTurnstileConfigured, turnstileAlwaysOn, verifyTurnstile } from "../lib/turnstile";
 import { writeEvent } from "../lib/analytics";
 import { fireWebhook } from "../lib/webhook";
 import {
@@ -409,7 +409,11 @@ const evaluateSpam = async (
 		}, numbers.spam_ai_threshold);
 		if (classifierVerdict) {
 			const source: SpamVerdictSource =
-				env.SPAM_PROVIDER === "akismet" ? "akismet" : "workers-ai";
+				env.SPAM_PROVIDER === "akismet"
+					? "akismet"
+					: env.SPAM_PROVIDER === "decision" || env.SPAM_PROVIDER === "clef"
+					? "decision"
+					: "workers-ai";
 			verdicts.push({
 				source,
 				verdict: classifierVerdict.spam ? "spam" : "ham",
@@ -550,12 +554,18 @@ comments.post("/", async (c) => {
 		return c.json({ error: t("err.ratelimit") }, 429);
 	};
 
+	const turnstileActive =
+		flags.turnstile_enabled &&
+		isTurnstileConfigured(c.env.TURNSTILE_SITE_KEY, c.env.TURNSTILE_SECRET);
+
 	// Siteverify for the token on this request. Returns an error response to
 	// hand back, or null when the token checks out. Shared by both identity
 	// paths: anonymous posts always come through here, signed-in ones only when
 	// the operator opted into `turnstile_always`. Callers check token
 	// *presence* themselves, before spending the write budget — see below.
 	const verifyChallenge = async (): Promise<Response | null> => {
+		if (!turnstileActive) return null;
+
 		// Turnstile binds the token to the hostname where the widget was
 		// SOLVED. The widget renders inside our same-origin iframe at
 		// GET /embed/turnstile-frame (the Shadow-DOM-dodging fix), so the
@@ -596,7 +606,7 @@ comments.post("/", async (c) => {
 			return c.json({ error: t(nameCheck.key, args) }, 400);
 		}
 
-		if (!body.turnstile_token) {
+		if (turnstileActive && !body.turnstile_token) {
 			return c.json({ error: t("err.turnstile.required") }, 400);
 		}
 
@@ -637,11 +647,13 @@ comments.post("/", async (c) => {
 		// enough of a cost by itself. Presence is checked here, before the
 		// budget, for the same reason as the anonymous path — a submit that
 		// raced its own token shouldn't also cost the reader their next slot.
-		const challenge = turnstileAlwaysOn(
-			flags.turnstile_always,
-			c.env.TURNSTILE_SITE_KEY,
-			c.env.TURNSTILE_SECRET,
-		);
+		const challenge =
+			turnstileActive &&
+			turnstileAlwaysOn(
+				flags.turnstile_always,
+				c.env.TURNSTILE_SITE_KEY,
+				c.env.TURNSTILE_SECRET,
+			);
 		if (challenge && !body.turnstile_token) {
 			return c.json({ error: t("err.turnstile.required") }, 400);
 		}
