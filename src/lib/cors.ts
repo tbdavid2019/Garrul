@@ -155,11 +155,9 @@ const isSelfOriginPost = (
 	if (method !== "POST") return false;
 	if (!SELF_ORIGIN_POST_PATHS.some((re) => re.test(path))) return false;
 	const expectedOrigin = new URL(requestUrl).origin;
-	if (origin) {
+	if (origin && origin !== "null") {
 		return origin === expectedOrigin;
 	}
-	// Same-origin top-level HTML form submissions in browsers often omit the Origin header.
-	// Verify through browser-enforced Sec-Fetch-Site or Referer.
 	if (secFetchSite === "same-origin") {
 		return true;
 	}

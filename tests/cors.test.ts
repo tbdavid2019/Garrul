@@ -516,6 +516,36 @@ describe("corsAndCsrf — Origin allowlist on /api/*", () => {
 			expect(res.status).toBe(200);
 		});
 
+		it("confirmation form POST from an attacker Origin (https://evil.com) is rejected", async () => {
+			const app = mkApp();
+			const res = await app.request(
+				`/api/v1/comments/confirm/${"a".repeat(64)}`,
+				{
+					method: "POST",
+					headers: {
+						Origin: "https://evil.com",
+					},
+				},
+				env,
+			);
+			expect(res.status).toBe(403);
+		});
+
+		it("confirmation form POST with sec-fetch-site: cross-site is rejected", async () => {
+			const app = mkApp();
+			const res = await app.request(
+				`/api/v1/comments/confirm/${"a".repeat(64)}`,
+				{
+					method: "POST",
+					headers: {
+						"sec-fetch-site": "cross-site",
+					},
+				},
+				env,
+			);
+			expect(res.status).toBe(403);
+		});
+
 		it("an unrelated no-Origin POST is still rejected", async () => {
 			const res = await call("/api/v1/comments", "POST");
 			expect(res.status).toBe(403);

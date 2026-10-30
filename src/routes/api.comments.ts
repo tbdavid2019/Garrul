@@ -862,6 +862,7 @@ comments.post("/", async (c) => {
 				subject: fillSubject(t("email.comment_confirm.subject"), title),
 				html: renderCommentConfirmationEmailHtml({
 					postTitle: title,
+					commentBody: body.body,
 					confirmUrl,
 					locale: c.get("locale") ?? FALLBACK_LOCALE,
 					t,
@@ -996,22 +997,28 @@ const escapeConfirmationHtml = (value: string): string =>
 const commentConfirmationPageHtml = (params: {
 	locale: string;
 	heading: string;
-	message?: string;
-	formAction?: string;
-	confirmText?: string;
-	returnUrl?: string | null;
-	returnText?: string;
+	message?: string | undefined;
+	commentBody?: string | undefined;
+	formAction?: string | undefined;
+	confirmText?: string | undefined;
+	returnUrl?: string | null | undefined;
+	returnText?: string | undefined;
 }): string => {
 	const dir = LOCALES[params.locale]?.rtl ? ' dir="rtl"' : "";
+	const isZh = params.locale.startsWith("zh");
+	const previewLabel = isZh ? "留言原文預覽：" : "Comment preview:";
+	const commentPreview = params.commentBody
+		? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #2563eb;border-radius:8px;padding:1rem 1.25rem;margin:1.25rem 0;color:#1e293b;"><div style="font-size:0.875rem;color:#64748b;margin-bottom:0.5rem;font-weight:600;">${escapeConfirmationHtml(previewLabel)}</div><div style="white-space:pre-wrap;word-break:break-word;line-height:1.6;font-size:0.95rem;">${escapeConfirmationHtml(params.commentBody)}</div></div>`
+		: "";
 	const form =
 		params.formAction && params.confirmText
-			? `<form method="post" action="${escapeConfirmationHtml(params.formAction)}"><button type="submit">${escapeConfirmationHtml(params.confirmText)}</button></form>`
+			? `<form method="post" id="confirm-form" action="${escapeConfirmationHtml(params.formAction)}"><button id="confirm-btn" type="submit" style="background:#111827;color:#ffffff;padding:0.65rem 1.3rem;font-size:1rem;font-weight:600;border:none;border-radius:6px;cursor:pointer;">${escapeConfirmationHtml(params.confirmText)}</button></form><script>document.getElementById("confirm-form")?.addEventListener("submit",function(e){e.preventDefault();var btn=document.getElementById("confirm-btn");if(btn){btn.disabled=true;btn.textContent="...";}fetch(this.action,{method:"POST",credentials:"same-origin"}).then(function(res){return res.text();}).then(function(html){document.open();document.write(html);document.close();}).catch(function(){document.getElementById("confirm-form")?.submit();});});</script>`
 			: "";
 	const returnLink =
 		params.returnUrl && params.returnText
-			? `<p><a href="${escapeConfirmationHtml(params.returnUrl)}">${escapeConfirmationHtml(params.returnText)}</a></p>`
+			? `<p style="margin-top:1.5rem;"><a href="${escapeConfirmationHtml(params.returnUrl)}" style="color:#2563eb;text-decoration:none;">${escapeConfirmationHtml(params.returnText)}</a></p>`
 			: "";
-	return `<!doctype html><html lang="${escapeConfirmationHtml(params.locale)}"${dir}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeConfirmationHtml(params.heading)}</title><body style="font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem;color:#111827"><main><h1>${escapeConfirmationHtml(params.heading)}</h1>${params.message ? `<p>${escapeConfirmationHtml(params.message)}</p>` : ""}${form}${returnLink}</main></body></html>`;
+	return `<!doctype html><html lang="${escapeConfirmationHtml(params.locale)}"${dir}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeConfirmationHtml(params.heading)}</title><body style="font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1.25rem;color:#111827;line-height:1.5;"><main><h1 style="font-size:1.5rem;line-height:1.3;margin-bottom:1rem;">${escapeConfirmationHtml(params.heading)}</h1>${commentPreview}${params.message ? `<p style="color:#4b5563;margin-bottom:1.25rem;">${escapeConfirmationHtml(params.message)}</p>` : ""}${form}${returnLink}</main></body></html>`;
 };
 
 const commentConfirmationPage = (
@@ -1019,6 +1026,7 @@ const commentConfirmationPage = (
 	params: Parameters<typeof commentConfirmationPageHtml>[0],
 ) => {
 	c.header("Cache-Control", "no-store");
+	c.header("Referrer-Policy", "same-origin");
 	return c.html(commentConfirmationPageHtml(params));
 };
 
@@ -1051,6 +1059,7 @@ comments.get("/confirm/:token", async (c) => {
 		locale,
 		heading: t("ui.comment.confirm_prompt", { title }),
 		message: t("ui.comment.confirm_note"),
+		commentBody: candidate.body_md,
 		formAction: new URL(c.req.url).pathname,
 		confirmText: t("ui.comment.confirm_cta"),
 		returnUrl: allowedPostUrl(post?.url, c.env.ALLOWED_ORIGINS),
